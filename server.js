@@ -6,9 +6,12 @@ const userRoutes = require('./routes/user.route.js');
 
 const app = express();
 const PORT = process.env.PORT || 4321;
+const cors = require('cors');
 
 // Middleware for parsing JSON
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 
 // Routes
 app.use('/api/auth', authRoutes); // authentication routes
