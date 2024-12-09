@@ -148,7 +148,7 @@ const verifyEmail = async (req, res) => {
 
   // Compare the stored code with the submitted one
   if (storedCode === verificationCode) {
-    // Update the user's status to 'Active'
+    // Update the user's status to 'verified'
     const user = await User.findOne({ where: { email } });
     if (user) {
       await user.update({

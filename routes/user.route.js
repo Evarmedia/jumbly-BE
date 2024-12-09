@@ -12,6 +12,6 @@ router.get('/profile', authMiddleware, profile)
 router.put('/:user_id', updateUserDetails)
 
 // get all available roles
-router.get('/roles', authMiddleware, authMiddleware, checkRole('admin'),getAvailableRoles)
+router.get('/roles', authMiddleware, checkRole('admin'), getAvailableRoles)
 
 module.exports = router;

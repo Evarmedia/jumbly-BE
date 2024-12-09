@@ -40,7 +40,7 @@ const profile = async (req, res) => {
 
 /** 
  * Update user account details{username, email, phone, company_name, contact_person, status, role_id}
- * Frontend should update user status to inactive upon logout
+ 
  * admin will be able to update roles via role_id
  * other users will be able to update their details
  * **/

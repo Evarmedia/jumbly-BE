@@ -15,7 +15,7 @@ router.post('/login', login);
 router.post('/verify-email', verifyEmail);
 
 // Delete
-router.delete('/delete/:user_id', authMiddleware, checkRole('admin'), deleteUser);
+router.delete('/delete/:user_id', authMiddleware, deleteUser);
 
 // Forgot Password
 router.post('/forgot-password', forgotPassword);
