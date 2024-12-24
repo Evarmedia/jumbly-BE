@@ -3,6 +3,7 @@ const express = require('express');
 const sequelize = require('./config/db'); // Import the Sequelize instance
 const authRoutes = require('./routes/auth.route'); 
 const userRoutes = require('./routes/user.route.js');
+const projectRoutes = require('./routes/project.route.js');
 
 const app = express();
 const PORT = process.env.PORT || 4321;
@@ -21,6 +22,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 // Routes
 app.use('/api/auth', authRoutes); // authentication routes
 app.use('/api/users', userRoutes); // general user management routes
+app.use('/api/projects', projectRoutes); // project management routes
 
 // Test server response 
 app.get('/', (req, res) => {

@@ -27,10 +27,10 @@ CREATE TABLE Roles (
 -- 3. Clients Table
 CREATE TABLE Clients (
     client_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    company_name TEXT UNIQUE NOT NULL,
-    contact_person TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    phone TEXT NOT NULL,
+    company_name TEXT UNIQUE,
+    contact_person TEXT,
+    email TEXT UNIQUE,
+    phone TEXT,
     address TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP

@@ -147,6 +147,23 @@ const getAllStaff = async (req, res) => {
   }
 };
 
+// Function to retrieve all clients
+const getAllClients = async (req, res) => {
+  try {
+      const clients = await User.findAll({
+          include: [{
+              model: Role,
+              where: {
+                  role_name: 'client'
+              }
+          }]
+      });
+      res.json(clients);
+  } catch (error) {
+      res.status(500).send({ message: "Error retrieving clients: " + error.message });
+  }
+};
+
 // Delete User Profile, for now only user and client tables are affected by this action
 async function deleteUser(req, res) {
   const { user_id } = req.params;
@@ -199,4 +216,4 @@ async function deleteUser(req, res) {
 }
 
 
-module.exports = { updateUserDetails, profile, getAvailableRoles, getAllStaff, deleteUser };
+module.exports = { updateUserDetails, profile, getAvailableRoles, getAllStaff, getAllClients, deleteUser };

@@ -1,14 +1,17 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { User, Role, UserClient, Client } = require("../models/models.js");
-const crypto = require('crypto');
-const { sendVerificationEmail, sendResetPasswordEmail } = require('../utils/emailService.js');
-const { Op } = require('sequelize');
+const crypto = require("crypto");
+const {
+  sendVerificationEmail,
+  sendResetPasswordEmail,
+} = require("../utils/emailService.js");
+const { Op } = require("sequelize");
+const sequelize = require('../config/db'); 
 
 const config = require("../config/jwt");
-const redis = require('../utils/redis.js');
+const redis = require("../utils/redis.js");
 
-// Register a new user
 const register = async (req, res) => {
   try {
     const {
@@ -19,7 +22,6 @@ const register = async (req, res) => {
       phone,
       company_name,
       contact_person,
-      // status
     } = req.body;
 
     // Check if the user already exists
@@ -37,52 +39,89 @@ const register = async (req, res) => {
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create the user
-    const newUser = await User.create({
-      username,
-      email,
-      password: hashedPassword,
-      role_id,
-      phone,
-    });
+    // Start a transaction for atomicity
+    const transaction = await sequelize.transaction();
+    try {
+      // Create the user
+      const newUser = await User.create(
+        {
+          username,
+          email,
+          password: hashedPassword,
+          role_id,
+          phone,
+        },
+        { transaction }
+      );
 
-    // If the user is a client, create a client record and associate it with the user
-    if (role.role_name === "client" && company_name && contact_person) {
-      // Create a client record
-      const newClient = await Client.create({
-        company_name,
-        contact_person,
-        email,
-        phone,
+      // If the user is a client, create a client record and associate it with the user
+      if (role.role_name === "client") {
+        // if (!company_name || !contact_person) {
+        //   throw new Error(
+        //     "Company name and contact person are required for client registration"
+        //   );
+        // }
+
+        // Create a client record
+        const newClient = await Client.create(
+          {
+            company_name,
+            contact_person,
+            email,
+            phone,
+          },
+          { transaction }
+        );
+
+        // Create the many-to-many relationship in UserClients
+        await UserClient.create(
+          {
+            user_id: newUser.user_id,
+            client_id: newClient.client_id,
+          },
+          { transaction }
+        );
+      }
+
+      // Commit the transaction
+      await transaction.commit();
+
+      // Generate a verification code
+      // const verificationCode = crypto.randomBytes(3).toString('hex');
+
+      // Store the code in Redis with an expiration time (10 minutes)
+      // redis
+      //   .setex(`verification_code_${email}`, 600, verificationCode)
+      //   .catch((err) =>
+      //     console.error("Failed to store verification code in Redis:", err)
+      //   );
+
+      // Send the verification email
+      // sendVerificationEmail(email, verificationCode).catch((err) =>
+      //   console.error("Failed to send verification email:", err)
+      // );
+
+      return res.status(201).json({
+        message:
+          "User registered successfully. Check your email for verification.",
+        user: {
+          id: newUser.user_id,
+          username: newUser.username,
+          email: newUser.email,
+          role_id: newUser.role_id,
+          phone: newUser.phone,
+        },
       });
-
-      // Create the many-to-many relationship between the user and the client
-      await newUser.addClient(newClient);  // Sequelize automatically looks for the UserClients join table
+    } catch (err) {
+      // Rollback transaction if anything goes wrong
+      await transaction.rollback();
+      throw err;
     }
-
-    
-// Generate a verification code
-// const verificationCode = crypto.randomBytes(3).toString('hex');
-
-// Store the code in Redis with an expiration time (10 minutes)
-// await redis.setex(`verification_code_${email}`, 600, verificationCode);
-
-// Send the verification email
-// await sendVerificationEmail(email, verificationCode);
-
-    return res.status(201).json({
-      message: "User registered successfully, check your email for verification",
-      user: {
-        id: newUser.user_id,
-        username: newUser.username,
-        email: newUser.email,
-        role_id: newUser.role_id,
-        phone: newUser.phone,
-      },
-    });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Server error" });
+    return res
+      .status(500)
+      .json({ message: "Server error", error: error.message });
   }
 };
 
@@ -103,14 +142,16 @@ const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    payload = { user: { user_id: user.user_id, username: user.username, role_name: user.Role.role_name } }
-    
+    payload = {
+      user: {
+        user_id: user.user_id,
+        username: user.username,
+        role_name: user.Role.role_name,
+      },
+    };
+
     // Generate a JWT token
-    const token = jwt.sign(
-      payload,
-      config.jwtSecret,
-      { expiresIn: '1h' }
-    );
+    const token = jwt.sign(payload, config.jwtSecret, { expiresIn: "1h" });
 
     // Set JWT token in HttpOnly cookie
     res.cookie("token", token, {
@@ -143,7 +184,9 @@ const verifyEmail = async (req, res) => {
   // Get the verification code from Redis
   const storedCode = await redis.get(`verification_code_${email}`);
   if (!storedCode) {
-    return res.status(400).json({ message: "Verification code has expired or does not exist" });
+    return res
+      .status(400)
+      .json({ message: "Verification code has expired or does not exist" });
   }
 
   // Compare the stored code with the submitted one
@@ -152,7 +195,7 @@ const verifyEmail = async (req, res) => {
     const user = await User.findOne({ where: { email } });
     if (user) {
       await user.update({
-        status: 'verified',
+        status: "verified",
       });
 
       // delete the code from Redis once verified
@@ -175,12 +218,12 @@ const forgotPassword = async (req, res) => {
     // Check if user exists
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     // Generate a random reset token (for example, using crypto)
-    const resetToken = crypto.randomBytes(20).toString('hex');
-    const resetTokenExpiration = new Date(Date.now() + 3600000);  // Token expires in 1 hour
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    const resetTokenExpiration = new Date(Date.now() + 3600000); // Token expires in 1 hour
 
     // Store reset token and expiration in the database
     user.reset_token = resetToken;
@@ -191,11 +234,11 @@ const forgotPassword = async (req, res) => {
     await sendResetPasswordEmail(user.email, resetToken);
 
     return res.status(200).json({
-      message: 'Password reset email sent. Please check your inbox.',
+      message: "Password reset email sent. Please check your inbox.",
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -209,13 +252,13 @@ const resetPassword = async (req, res) => {
       where: {
         reset_token: resetToken,
         reset_token_expiration: {
-          [Op.gt]: new Date(),  // Ensure the token has not expired
+          [Op.gt]: new Date(), // Ensure the token has not expired
         },
       },
     });
 
     if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired token' });
+      return res.status(400).json({ message: "Invalid or expired token" });
     }
 
     // Hash the new password
@@ -227,11 +270,19 @@ const resetPassword = async (req, res) => {
     user.reset_token_expiration = null;
     await user.save();
 
-    return res.status(200).json({ message: 'Password has been successfully updated.' });
+    return res
+      .status(200)
+      .json({ message: "Password has been successfully updated." });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
-module.exports = { register, login, verifyEmail, forgotPassword, resetPassword };
+module.exports = {
+  register,
+  login,
+  verifyEmail,
+  forgotPassword,
+  resetPassword,
+};

@@ -26,7 +26,7 @@ const sendVerificationEmail = async (userEmail, verificationCode) => {
     from: process.env.EMAIL_FROM,
     to: userEmail,
     subject: 'Email Verification Code',
-    text: `Your verification code is: ${verificationCode}`,
+    text: `Welcome to Jumbly, Your verification code is: ${verificationCode}, This code expires in 10 minutes`,
   };
 
   try {

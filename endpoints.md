@@ -13,31 +13,31 @@
 
 # Admin-Specific Endpoints
 ## Staff Management
-- `GET api/users/staff` - Retrieve list of staff members(role_name = operative and supervisors) []
+- `GET api/users/staff` - Retrieve list of staff members(role_name = operative and supervisors) [x]
 - `PUT api/users/{user_id}` - Modify staff member roles --use "Update user account details endpoint" here
 
 ## Client Management
-- `GET /admin/clients` - List all clients []
+- `GET /api/users/clients` - List all clients [x]
 - `POST api/auth/register` - Create new client --use register endpoint here
 - `PUT api/users/{user_id}` - Update client information ----use "Update user account details endpoint" here
-- `GET /admin/clients/{client_id}/projects` - Retrieve client's projects []
+- `GET /api/projects/client` - Retrieve client's projects [x]
 
 ## System Configuration
-- `POST /admin/roles` - Create new role XX
-- `GET /admin/task-statuses` - Retrieve task status types []
-- `POST /admin/task-categories` - Create new task category []
-- `GET /admin/task-categories` - List task categories []
-- `GET /admin/project-statuses` - Retrieve project status types []
+- `POST api/admin/roles` - Create new role XX
+- `GET api/admin/task-statuses` - Retrieve task status types []
+- `POST api/admin/task-categories` - Create new task category []
+- `GET api/admin/task-categories` - List task categories []
+- `GET api/admin/project-statuses` - Retrieve project status types []
 
 # Supervisor/Client Endpoints
 ## Project Management
-- `POST /projects` - Create new Project []
-- `GET /projects` - List Project []
-- `GET /projects/{project_id}` - Retrieve specific projects details []
-- `GET /projects/{project_id}/tasks` - List project tasks []
-- `PUT /projects/{project_id}` - Update projects details []
-- `PATCH /projects/{project_id}/status` - Change projects status []
-- `PATCH /tasks/{project_id}/assign` - Reassign task to operative []
+- `POST api/projects` - Create new Project []
+- `GET api/projects` - List Project []
+- `GET api/projects/{project_id}` - Retrieve specific projects details []
+- `GET api/projects/{project_id}/tasks` - List project tasks []
+- `PUT api/projects/{project_id}` - Update projects details []
+- `PATCH api/projects/{project_id}/status` - Change projects status []
+- `PATCH api/tasks/{project_id}/assign` - Reassign task to operative []
 
 ## Task Management
 - `POST /tasks` - Create new task []
