@@ -126,5 +126,56 @@ const getAvailableRoles = async (req, res) => {
     }
   };
 
+// Delete User Profile, for now only user and client tables are affected by this action
+async function deleteUser(req, res) {
+  const { user_id } = req.params;
 
-module.exports = { updateUserDetails, profile, getAvailableRoles };
+  try {
+      
+      const user = await User.findOne({
+          where: { user_id },
+          include: {
+              model: Role,
+              attributes: ['role_name']
+          }
+      });
+
+      if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Check if the user is a client (i.e., they are linked to a client in the UserClients table)
+      const userClients = await UserClient.findAll({
+          where: { user_id }
+      });
+
+      // If user is a client, remove them from the UserClients table and delete the associated client data
+      if (userClients.length > 0) {
+          const clientIds = userClients.map(userClient => userClient.client_id);
+
+          // Remove user-client associations
+          await UserClient.destroy({
+              where: { user_id }
+          });
+          // Delete associated clients if they exist (based on the client IDs)
+          await Client.destroy({
+              where: {
+                  client_id: clientIds
+              }
+          });
+      }
+
+      // Now delete the user
+      await user.destroy();
+
+      // Send a response
+      res.status(200).json({ message: 'User and associated data deleted successfully' });
+
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'An error occurred while deleting the user' });
+  }
+}
+
+
+module.exports = { updateUserDetails, profile, getAvailableRoles, deleteUser };

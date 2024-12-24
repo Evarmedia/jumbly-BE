@@ -1,9 +1,9 @@
 User Stories for Jumbly
 1. Admin (Cleaning Company) User Stories
 a. Staff Management
-    1. Add Supervisors and Operatives
+    1. Add Supervisors and Operatives✅
         ◦ As an Admin, I want to add supervisors and operatives to the system so that I can manage my cleaning staff effectively.
-    2. Manage Staff Accounts
+    2. Manage Staff Accounts✅
         ◦ As an Admin, I want to edit or deactivate staff accounts to maintain accurate and up-to-date employee information.
     3. Assign Roles and Permissions
         ◦ As an Admin, I want to assign specific roles and permissions to supervisors and operatives to ensure appropriate access levels.

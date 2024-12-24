@@ -13,6 +13,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
+const swaggerUi = require('swagger-ui-express');
+const specs = require('./swagger');
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+
 // Routes
 app.use('/api/auth', authRoutes); // authentication routes
 app.use('/api/users', userRoutes); // general user management routes

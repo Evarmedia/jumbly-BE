@@ -1,7 +1,7 @@
 -- 1. Users Table
 CREATE TABLE Users (
     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
+    username TEXT UNIQUE,
     password TEXT NOT NULL, -- Store hashed passwords
     role_id INTEGER NOT NULL, -- FK for Roles
     email TEXT UNIQUE NOT NULL,
@@ -125,19 +125,7 @@ CREATE TABLE TaskCategoryAssignments (
     FOREIGN KEY (category_id) REFERENCES TaskCategories(category_id)
 );
 
--- 12. Reports Table
-CREATE TABLE Reports (
-    report_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    project_id INTEGER NOT NULL,
-    submitted_by INTEGER NOT NULL,
-    report_content TEXT NOT NULL, -- Use TEXT for structured data
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (project_id) REFERENCES Projects(project_id),
-    FOREIGN KEY (submitted_by) REFERENCES Users(user_id)
-);
-
--- 13. Schedules Table
+-- 12. Schedules Table
 CREATE TABLE Schedules (
     schedule_id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL,
@@ -150,7 +138,7 @@ CREATE TABLE Schedules (
     FOREIGN KEY (supervisor_id) REFERENCES Users(user_id)
 );
 
--- 14. ScheduleTasks Table - JOIN Table
+-- 13. ScheduleTasks Table - JOIN Table
 CREATE TABLE ScheduleTasks (
     schedule_task_id INTEGER PRIMARY KEY AUTOINCREMENT,
     schedule_id INTEGER NOT NULL,
@@ -159,13 +147,25 @@ CREATE TABLE ScheduleTasks (
     FOREIGN KEY (task_id) REFERENCES Tasks(task_id)
 );
 
+-- 14. Reports Table
+CREATE TABLE Reports (
+    report_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    submitted_by INTEGER NOT NULL,
+    report_content TEXT NOT NULL, -- Use TEXT for structured data
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id),
+    FOREIGN KEY (submitted_by) REFERENCES Users(user_id)
+);
+
 -- 15. Issues Table
 CREATE TABLE Issues (
     issue_id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INTEGER NOT NULL,
     reported_by INTEGER NOT NULL,
     issue_description TEXT NOT NULL,
-    status TEXT CHECK(status IN ('reported', 'resolved')) NOT NULL,
+    status TEXT CHECK(status IN ('reported', 'resolved')) NOT NULL DEFAULT 'reported',
     photo_attachment TEXT, -- Store URLs or file references
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,

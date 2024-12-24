@@ -9,72 +9,78 @@
 - `GET api/users/profile` - Retrieve authenticated user's profile [x]
 - `PUT api/users/{user_id}` - Update user account details [x]
 - `GET api/users/roles` - List available user roles  [x]
-- `POST api/user/add` - add new user, Add new staff member (operative or supervisor, client)
+- `POST api/auth/register` - add new user, Add new staff member (operative or supervisor, client) --use register endpoint here
 
 # Admin-Specific Endpoints
 ## Staff Management
-- `GET /admin/staff` - Retrieve list of staff members(operative and supervisors) []
-- `PATCH /admin/staff/{userId}/roles` - Modify staff member roles
+- `GET api/users/staff` - Retrieve list of staff members(role_name = operative and supervisors) []
+- `PUT api/users/{user_id}` - Modify staff member roles --use "Update user account details endpoint" here
 
 ## Client Management
-- `GET /admin/clients` - List all clients
-- `POST api/auth/register` - Create new client
-- `PUT /admin/clients/{client_id}` - Update client information
-- `GET /admin/clients/{client_id}/projects` - Retrieve client's projects
+- `GET /admin/clients` - List all clients []
+- `POST api/auth/register` - Create new client --use register endpoint here
+- `PUT api/users/{user_id}` - Update client information ----use "Update user account details endpoint" here
+- `GET /admin/clients/{client_id}/projects` - Retrieve client's projects []
 
 ## System Configuration
-- `POST /admin/roles` - Create new role
-- `GET /admin/task-statuses` - Retrieve task status types
-- `GET /admin/task-categories` - List task categories
-- `POST /admin/task-categories` - Create new task category
-- `GET /admin/project-statuses` - Retrieve project status types
+- `POST /admin/roles` - Create new role XX
+- `GET /admin/task-statuses` - Retrieve task status types []
+- `POST /admin/task-categories` - Create new task category []
+- `GET /admin/task-categories` - List task categories []
+- `GET /admin/project-statuses` - Retrieve project status types []
 
-# Supervisor Endpoints
+# Supervisor/Client Endpoints
+## Project Management
+- `POST /projects` - Create new Project []
+- `GET /projects` - List Project []
+- `GET /projects/{project_id}` - Retrieve specific projects details []
+- `GET /projects/{project_id}/tasks` - List project tasks []
+- `PUT /projects/{project_id}` - Update projects details []
+- `PATCH /projects/{project_id}/status` - Change projects status []
+- `PATCH /tasks/{project_id}/assign` - Reassign task to operative []
+
 ## Task Management
-- `GET /supervisor/tasks` - List assigned tasks
-- `POST /supervisor/tasks` - Create new task
-- `PUT /supervisor/tasks/{task_id}` - Update task details
-- `PATCH /supervisor/tasks/{task_id}/status` - Change task status
-- `PATCH /supervisor/tasks/{task_id}/assign` - Reassign task to operative
+- `POST /tasks` - Create new task []
+- `GET /tasks` - List tasks []
+- `GET /tasks/{task_id}` - Retrieve specific task details []
+- `PUT /tasks/{task_id}` - Update task details []
+- `PATCH /tasks/{task_id}/status` - Change task status []
+- `PATCH /tasks/{task_id}/assign` - Reassign task to operative []
 
 ## Scheduling
-- `GET /supervisor/schedules` - List all schedules
-- `POST /supervisor/schedules` - Create new schedule
-- `GET /supervisor/schedules/{schedule_id}` - Retrieve specific schedule
-- `PUT /supervisor/schedules/{schedule_id}` - Update schedule details
+- `POST /schedules` - Create new schedule []
+- `GET /schedules` - List all schedules []
+- `GET /schedules/{schedule_id}` - Retrieve specific schedule []
+- `PUT /schedules/{schedule_id}` - Update schedule details []
 
 ## Reporting
-- `GET /supervisor/reports` - List generated reports
-- `POST /supervisor/reports` - Create new report
-- `GET /supervisor/analytics` - Retrieve performance analytics
+- `POST /reports` - Create new report []
+- `GET /reports` - List generated reports []
+- `GET /analytics` - Retrieve performance analytics XX
 
-# Operative Endpoints
+# Operative/Client Endpoints
 ## Task Management
-- `GET /operative/tasks` - List assigned tasks
-- `GET /operative/tasks/{task_id}` - Retrieve specific task details
-- `PATCH /operative/tasks/{task_id}/status` - Update task completion status
+- `GET /operative/tasks` - List assigned tasks []
+- `GET /tasks/{task_id}` -- use Retrieve specific task details
+- `PATCH /tasks/{task_id}/status` -- use Change task status
 
 ## Issue Reporting
-- `POST /operative/issues` - Report new issue
-- `GET /operative/issues` - List reported issues
-- `GET /operative/issues/{issue_id}` - Retrieve specific issue details
+- `POST /issues` - Report new issue []
+- `GET /issues/{task_id}` - Retrieve specific issue details for a given task []
+### For ADMIN/supervisor
+- `GET /issues` - List reported issues []
 
 # Client Endpoints
 ## Project Oversight
-- `GET /client/projects` - List client's projects
-- `GET /client/projects/{project_id}` - Retrieve project details
-- `GET /client/projects/{project_id}/tasks` - List project tasks
-- `GET /client/projects/{project_id}/reports` - Retrieve project reports
-
-## Inspections & Feedback
-- `POST /client/inspections` - Submit project inspection
-- `GET /client/inspections` - List past inspections
-- `POST /client/feedback` - Submit service feedback
+- `GET /client/projects` - List client's projects []
+- `GET /projects/{project_id}/reports` - Retrieve project reports []
+- `GET /projects/{project_id}/tasks` -- use List project tasks
+- `GET /projects/{project_id}` -- use Retrieve specific projects details
 
 # Cross-Role Endpoints
 ## Notifications
-- `GET /notifications` - Retrieve user notifications
-- `PATCH /notifications/{notificationId}/status` - Mark notification as read/unread
+- `GET /notifications` - Retrieve user notifications []
+- `PATCH /notifications/{notificationId}/status` - Mark notification as read/unread []
 
 ## Integration & Sync
 - `POST /sync/calendar` - Sync schedules with external calendars

@@ -11,6 +11,7 @@ npm install express-validator
 npm install eslint --save-dev
 npm install nodemailer
 npm install ioredis
+npm install swagger-ui-express swagger-jsdoc
 
 <!-- node middleware for uploading files -->
 npm install multer --save 

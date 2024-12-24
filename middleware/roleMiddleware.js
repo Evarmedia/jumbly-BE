@@ -5,7 +5,7 @@ const checkRole = (...allowedRoles) => {
   return async (req, res, next) => {
     try {
       // Assuming user info is stored in req.user from previous authentication middleware
-      console.log(req.user);
+      // console.log(req.user);
       const user = await User.findByPk(req.user.user_id, {
         include: {
           model: Role,
@@ -18,7 +18,7 @@ const checkRole = (...allowedRoles) => {
       }
 
       // Check if the user's role matches any of the allowed roles
-      if (!allowedRoles.includes(user.role_name)) {
+      if (!allowedRoles.includes(user.Role.role_name)) {
         return res.status(403).json({ message: 'Forbidden: You do not have access to this resource' });
       }
 
