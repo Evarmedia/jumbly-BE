@@ -3,6 +3,8 @@
 // - `GET api/users/roles` - List available user roles  []
 
 const { User, Role, UserClient, Client } = require("../models/models.js");
+const { Op } = require('sequelize');
+
 
 // Controller to get user profile
 const profile = async (req, res) => {
@@ -126,6 +128,25 @@ const getAvailableRoles = async (req, res) => {
     }
   };
 
+// Function to retrieve all staff members with roles 'operative' and 'supervisor'
+const getAllStaff = async (req, res) => {
+  try {
+      const staff = await User.findAll({
+          include: [{
+              model: Role,
+              where: {
+                  role_name: {
+                      [Op.in]: ['operative', 'supervisor']
+                  }
+              }
+          }]
+      });
+      res.json(staff);
+  } catch (error) {
+      res.status(500).send({ message: "Error retrieving staff members: " + error.message });
+  }
+};
+
 // Delete User Profile, for now only user and client tables are affected by this action
 async function deleteUser(req, res) {
   const { user_id } = req.params;
@@ -178,4 +199,4 @@ async function deleteUser(req, res) {
 }
 
 
-module.exports = { updateUserDetails, profile, getAvailableRoles, deleteUser };
+module.exports = { updateUserDetails, profile, getAvailableRoles, getAllStaff, deleteUser };

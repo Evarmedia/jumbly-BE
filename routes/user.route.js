@@ -1,5 +1,5 @@
 const express = require('express');
-const { profile, updateUserDetails, getAvailableRoles, deleteUser } = require('../controllers/user.controller.js');
+const { profile, updateUserDetails, getAvailableRoles, getAllStaff, deleteUser } = require('../controllers/user.controller.js');
 const authMiddleware = require('../middleware/authMiddleware.js');
 const {checkRole} = require('../middleware/roleMiddleware.js');
 
@@ -31,6 +31,7 @@ const router = express.Router();
  */
 router.get('/profile', authMiddleware, profile)
 
+
 /**
  * @swagger
  * /api/users/{user_id}:
@@ -61,7 +62,7 @@ router.get('/profile', authMiddleware, profile)
  *       200:
  *         description: User details updated
  */
-router.put('/:user_id', updateUserDetails)
+router.put('/:user_id', authMiddleware, updateUserDetails)
 
 
 /**
@@ -87,6 +88,32 @@ router.get('/roles', authMiddleware, checkRole('admin'), getAvailableRoles)
 
 /**
  * @swagger
+ * /api/users/staff:
+ *   get:
+ *     summary: Retrieve a list of staff members
+ *     description: Returns a list of users who are either operatives or supervisors.
+ *     tags: [User]
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved list of staff members
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized, if the user does not have the right permissions
+ *       500:
+ *         description: Internal server error
+ */
+
+// Route to get all staff members
+router.get('/staff', authMiddleware, checkRole('admin'), getAllStaff);
+
+
+/**
+ * @swagger
  * /api/users/delete/{user_id}:
  *   delete:
  *     summary: Delete user account
@@ -104,6 +131,6 @@ router.get('/roles', authMiddleware, checkRole('admin'), getAvailableRoles)
  *       204:
  *         description: User account deleted
  */
-router.delete('/delete/:user_id', checkRole('admin'), authMiddleware, deleteUser);
+router.delete('/delete/:user_id', authMiddleware, checkRole('admin'),  deleteUser);
 
 module.exports = router;

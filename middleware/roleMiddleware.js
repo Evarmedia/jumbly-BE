@@ -5,7 +5,7 @@ const checkRole = (...allowedRoles) => {
   return async (req, res, next) => {
     try {
       // Assuming user info is stored in req.user from previous authentication middleware
-      // console.log(req.user);
+      console.log(req.user);
       const user = await User.findByPk(req.user.user_id, {
         include: {
           model: Role,
@@ -26,7 +26,7 @@ const checkRole = (...allowedRoles) => {
       next();
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ message: 'Server error' });
+      return res.status(500).json({ message: 'Server error, login and try again' });
     }
   };
 };

@@ -62,13 +62,13 @@ const register = async (req, res) => {
 
     
 // Generate a verification code
-const verificationCode = crypto.randomBytes(3).toString('hex');
+// const verificationCode = crypto.randomBytes(3).toString('hex');
 
 // Store the code in Redis with an expiration time (10 minutes)
-await redis.setex(`verification_code_${email}`, 600, verificationCode);
+// await redis.setex(`verification_code_${email}`, 600, verificationCode);
 
 // Send the verification email
-await sendVerificationEmail(email, verificationCode);
+// await sendVerificationEmail(email, verificationCode);
 
     return res.status(201).json({
       message: "User registered successfully, check your email for verification",
