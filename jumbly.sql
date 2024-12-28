@@ -1,11 +1,17 @@
 -- 1. Users Table
 CREATE TABLE Users (
     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE,
-    password TEXT NOT NULL, -- Store hashed passwords
-    role_id INTEGER NOT NULL, -- FK for Roles
-    email TEXT UNIQUE NOT NULL,
-    phone TEXT,
+    role_id INTEGER NOT NULL,       -- Foreign key for role
+    email TEXT UNIQUE NOT NULL,     -- Common to all roles, required
+    password TEXT NOT NULL,         -- Common to all roles, required
+    first_name TEXT,                -- Common to all roles
+    last_name TEXT,                 -- Common to all roles
+    address TEXT,                   -- Common to Supervisor, Operator, Admin, Client
+    gender TEXT,                    -- Common to Supervisor, Operator, Admin, Client
+    phone TEXT,                     -- Common to all roles
+    photo TEXT,                     -- Common to Supervisor, Operator, Admin, Client
+    education TEXT,                 -- Unique to Supervisor, Operator
+    birthdate DATE,                 -- Unique to Supervisor, Operator
     status TEXT CHECK(status IN ('verified', 'unverified')) NOT NULL DEFAULT 'unverified',
     reset_token TEXT,  -- New field for password reset token
     reset_token_expiration DATETIME,  -- New field for token expiration date
@@ -13,7 +19,6 @@ CREATE TABLE Users (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (role_id) REFERENCES Roles(role_id)
 );
-
 
 -- 2. Roles Table - precreate some
 CREATE TABLE Roles (
@@ -27,11 +32,12 @@ CREATE TABLE Roles (
 -- 3. Clients Table
 CREATE TABLE Clients (
     client_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    company_name TEXT UNIQUE,
-    contact_person TEXT,
-    email TEXT UNIQUE,
-    phone TEXT,
-    address TEXT,
+    email TEXT UNIQUE,              -- Inherited from registration endpoint
+    website TEXT,                   -- Client-specific
+    company_name TEXT,              -- Client-specific
+    industry TEXT,                  -- Description of the industry
+    official_email TEXT,            -- Client-specific
+    contact_person TEXT,            -- Client-specific
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -82,12 +88,13 @@ CREATE TABLE Tasks (
     due_date DATE NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (project_id) REFERENCES Projects(project_id),
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id) ON DELETE CASCADE,
     FOREIGN KEY (assigned_by) REFERENCES Users(user_id),
     FOREIGN KEY (assigned_to) REFERENCES Users(user_id),
     FOREIGN KEY (status_id) REFERENCES TaskStatuses(status_id),
     FOREIGN KEY (priority_id) REFERENCES TaskPriorities(priority_id)
 );
+
 
 -- 8. TaskStatuses Table - precreate some
 CREATE TABLE TaskStatuses (
@@ -241,3 +248,12 @@ VALUES
 ('projects', 'Tasks related to ongoing projects'),
 ('administrative', 'Tasks related to administrative tasks'),
 ('personal', 'Tasks related to personal development and goals');
+
+CREATE TRIGGER update_updated_at
+AFTER UPDATE ON Projects
+FOR EACH ROW
+BEGIN
+    UPDATE Projects
+    SET updated_at = CURRENT_TIMESTAMP
+    WHERE project_id = OLD.project_id;
+END;

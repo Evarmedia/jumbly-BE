@@ -41,7 +41,9 @@ const Project = sequelize.define('Project', {
     },
 }, {
     tableName: 'Projects',
-    timestamps: false, // Set to true if using Sequelize automatic timestamps
+    timestamps: true, // Set to true if using Sequelize automatic timestamps
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
 });
 
 module.exports = Project;

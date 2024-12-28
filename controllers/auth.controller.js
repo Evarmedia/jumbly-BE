@@ -15,12 +15,22 @@ const redis = require("../utils/redis.js");
 const register = async (req, res) => {
   try {
     const {
-      username,
+      role_id,
       email,
       password,
-      role_id,
+      first_name,
+      last_name,
+      address,
+      gender,
       phone,
+      photo,
+      education,
+      birthdate,
+      status,
+      website,
       company_name,
+      industry,
+      official_email,
       contact_person,
     } = req.body;
 
@@ -45,7 +55,6 @@ const register = async (req, res) => {
       // Create the user
       const newUser = await User.create(
         {
-          username,
           email,
           password: hashedPassword,
           role_id,
@@ -56,19 +65,15 @@ const register = async (req, res) => {
 
       // If the user is a client, create a client record and associate it with the user
       if (role.role_name === "client") {
-        // if (!company_name || !contact_person) {
-        //   throw new Error(
-        //     "Company name and contact person are required for client registration"
-        //   );
-        // }
 
         // Create a client record
         const newClient = await Client.create(
           {
+            website,
             company_name,
+            industry,
+            official_email,
             contact_person,
-            email,
-            phone,
           },
           { transaction }
         );
@@ -105,11 +110,9 @@ const register = async (req, res) => {
         message:
           "User registered successfully. Check your email for verification.",
         user: {
-          id: newUser.user_id,
-          username: newUser.username,
+          user_id: newUser.user_id,
           email: newUser.email,
           role_id: newUser.role_id,
-          phone: newUser.phone,
         },
       });
     } catch (err) {

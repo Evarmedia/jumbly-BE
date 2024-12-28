@@ -31,65 +31,70 @@
 
 # Supervisor/Client Endpoints
 ## Project Management
-- `POST api/projects` - Create new Project []
-- `GET api/projects` - List Project []
-- `GET api/projects/{project_id}` - Retrieve specific projects details []
-- `GET api/projects/{project_id}/tasks` - List project tasks []
-- `PUT api/projects/{project_id}` - Update projects details []
-- `PATCH api/projects/{project_id}/status` - Change projects status []
-- `PATCH api/tasks/{project_id}/assign` - Reassign task to operative []
+- `POST api/projects` - Create new Project autenticated client[x]
+- `POST api/projects/admin` - Create new Project admin [x]
+- `GET api/projects` - List all Projects [x]
+- `GET api/projects/{project_id}` - Retrieve specific projects details [x]
+- `PUT api/projects/{project_id}` - Update projects details [x]
+- `PATCH api/projects/{project_id}/status` - Change projects status [x]
+- `PATCH api/projects/{project_id}/assign` - Reassign project to supervisor [] XX
+- `DELETE api/projects/{project_id}/` - Delete a project [x]
 
 ## Task Management
-- `POST /tasks` - Create new task []
-- `GET /tasks` - List tasks []
-- `GET /tasks/{task_id}` - Retrieve specific task details []
-- `PUT /tasks/{task_id}` - Update task details []
-- `PATCH /tasks/{task_id}/status` - Change task status []
-- `PATCH /tasks/{task_id}/assign` - Reassign task to operative []
+- `POST api/tasks` - Create new task []
+- `GET api/tasks` - List tasks []
+- `GET api/tasks/projects/{project_id}/` - List project tasks [x]
+- `GET api/tasks/{task_id}` - Retrieve specific task details []
+- `PUT api/tasks/{task_id}` - Update task details []
+- `PATCH api/tasks/{task_id}/status` - Change task status []
+- `PATCH api/tasks/{task_id}/assign` - Reassign task to operative []
+- `DELETE api/tasks/{project_id}/` - Delete a task
 
 ## Scheduling
-- `POST /schedules` - Create new schedule []
-- `GET /schedules` - List all schedules []
-- `GET /schedules/{schedule_id}` - Retrieve specific schedule []
-- `PUT /schedules/{schedule_id}` - Update schedule details []
+- `POST api/schedules` - Create new schedule []
+- `GET api/schedules` - List all schedules []
+- `GET api/schedules/{schedule_id}` - Retrieve specific schedule []
+- `PUT api/schedules/{schedule_id}` - Update schedule details []
+
+## Inventory Management:
 
 ## Reporting
-- `POST /reports` - Create new report []
-- `GET /reports` - List generated reports []
-- `GET /analytics` - Retrieve performance analytics XX
+- `POST api/reports` - Create new report []
+- `GET api/reports` - List generated reports []
+- `GET api/analytics` - Retrieve performance analytics XX
 
 # Operative/Client Endpoints
 ## Task Management
-- `GET /operative/tasks` - List assigned tasks []
-- `GET /tasks/{task_id}` -- use Retrieve specific task details
-- `PATCH /tasks/{task_id}/status` -- use Change task status
+- `GET api/operative/tasks` - List assigned tasks []
+- `GET api/tasks/{task_id}` -- use Retrieve specific task details
+- `PATCH api/tasks/{task_id}/status` -- use Change task status
 
 ## Issue Reporting
-- `POST /issues` - Report new issue []
-- `GET /issues/{task_id}` - Retrieve specific issue details for a given task []
+- `POST api/issues` - Report new issue []
+- `GET api/issues/{task_id}` - Retrieve specific issue details for a given task []
 ### For ADMIN/supervisor
-- `GET /issues` - List reported issues []
+- `GET apiapi/issues` - List reported issues []
 
 # Client Endpoints
 ## Project Oversight
-- `GET /client/projects` - List client's projects []
-- `GET /projects/{project_id}/reports` - Retrieve project reports []
-- `GET /projects/{project_id}/tasks` -- use List project tasks
-- `GET /projects/{project_id}` -- use Retrieve specific projects details
+- `GET api/client/projects` - List client's projects []
+- `GET api/projects/{project_id}/reports` - Retrieve project reports []
+- `GET api/projects/{project_id}/tasks` -- use List project tasks
+- `GET api/projects/{project_id}` -- use Retrieve specific projects details
 
 # Cross-Role Endpoints
 ## Notifications
-- `GET /notifications` - Retrieve user notifications []
-- `PATCH /notifications/{notificationId}/status` - Mark notification as read/unread []
+- `GET api/notifications` - Retrieve user notifications []
+- `PATCH api/notifications/{notificationId}/status` - Mark notification as read/unread []
 
 ## Integration & Sync
-- `POST /sync/calendar` - Sync schedules with external calendars
-- `POST /sync/offline-data` - Synchronize offline-entered data
+- `POST apiapi/sync/calendar` - Sync schedules with external calendars
+- `POST apiapi/sync/offline-data` - Synchronize offline-entered data
 
 # Audit & Compliance
-- `GET /audit-logs` - Retrieve system audit logs
-- `GET /system/compliance-status` - Check data protection compliance
+- `GET api/audit-logs` - Retrieve system audit logs
+- `GET api/system/compliance-status` - Check data protection compliance
 
 # Support & Maintenance
-- `GET /system/updates` - Check for system updates
-- `GET /support/resources` - Access support documentation
+- `GET api/system/updates` - Check for system updates
+- `GET api/support/resources` - Access support documentation

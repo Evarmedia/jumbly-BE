@@ -20,14 +20,9 @@ const router = express.Router();
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: integer
- *                   description: User ID
- *                 name:
- *                   type: string
- *                   description: User name
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
  */
 router.get('/profile', authMiddleware, profile)
 
@@ -48,9 +43,13 @@ router.get('/profile', authMiddleware, profile)
  *             schema:
  *               type: array
  *               items:
- *                 type: string
+ *                 $ref: '#/components/schemas/Roles'  # Reference the Roles schema
+ *       403:
+ *         description: Unauthorized. Only admins can access this endpoint.
+ *       500:
+ *         description: Internal server error.
  */
-router.get('/roles', authMiddleware, checkRole('admin'), getAvailableRoles)
+router.get('/roles', authMiddleware, checkRole('admin'), getAvailableRoles);
 
 
 /**
@@ -92,7 +91,7 @@ router.get('/staff', authMiddleware, checkRole('admin'), getAllStaff);
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/User'
+ *                 $ref: '#/components/schemas/Client'
  *       401:
  *         description: Unauthorized, if the user does not have the right permissions
  *       500:
@@ -111,27 +110,36 @@ router.get('/clients', authMiddleware, checkRole('admin'), getAllClients);
  *       - in: path
  *         name: user_id
  *         schema:
- *           type: string
+ *           type: integer
  *         required: true
- *         description: User ID
+ *         description: The unique ID of the user to update
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 description: User name
- *               email:
- *                 type: string
- *                 description: User email
+ *             $ref: '#/components/schemas/User'  # Reference to the User schema
  *     responses:
  *       200:
- *         description: User details updated
+ *         description: User details updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: User details updated successfully
+ *                 user:
+ *                   $ref: '#/components/schemas/User'  # Reference to the updated User schema
+ *       400:
+ *         description: Invalid input data
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
  */
-router.put('/:user_id', authMiddleware, updateUserDetails)
+router.put('/:user_id', authMiddleware, updateUserDetails);
 
 
 /**

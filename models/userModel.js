@@ -1,5 +1,5 @@
 const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/db');  // Your Sequelize instance
+const sequelize = require('../config/db'); // Sequelize instance
 
 class User extends Model {}
 
@@ -8,45 +8,53 @@ User.init(
     user_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
-      autoIncrement: true
-    },
-    username: {
-      type: DataTypes.STRING,
-      unique: true,
-      allowNull: true
-    },
-    password: {
-      type: DataTypes.STRING,
-      allowNull: false
+      autoIncrement: true,
     },
     role_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Roles',
-        key: 'role_id'
-      }
+        model: 'Roles', // Table name for Roles
+        key: 'role_id', // Primary key in Roles table
+      },
     },
     email: {
       type: DataTypes.STRING,
       unique: true,
-      allowNull: false
+      allowNull: false,
+    },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    first_name: {
+      type: DataTypes.STRING,
+    },
+    last_name: {
+      type: DataTypes.STRING,
+    },
+    address: {
+      type: DataTypes.STRING,
+    },
+    gender: {
+      type: DataTypes.STRING,
     },
     phone: {
-      type: DataTypes.STRING
+      type: DataTypes.STRING,
+    },
+    photo: {
+      type: DataTypes.STRING,
+    },
+    education: {
+      type: DataTypes.STRING,
+    },
+    birthdate: {
+      type: DataTypes.DATE,
     },
     status: {
       type: DataTypes.ENUM('verified', 'unverified'),
       allowNull: false,
-      defaultValue: 'unverified'
-    },
-    created_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
-    },
-    updated_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
+      defaultValue: 'unverified',
     },
     reset_token: {
       type: DataTypes.STRING,
@@ -56,13 +64,20 @@ User.init(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    created_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
   },
-  
   {
-    sequelize,  // Sequelize instance
+    sequelize, // Sequelize instance
     modelName: 'User',
     tableName: 'Users',
-    timestamps: false  // Set to false because I used `created_at` and `updated_at` manually
+    timestamps: false, // Explicitly managing created_at and updated_at
   }
 );
 

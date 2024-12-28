@@ -1,5 +1,5 @@
 const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/db');  // Your Sequelize instance
+const sequelize = require('../config/db'); // Sequelize instance
 
 class Client extends Model {}
 
@@ -10,25 +10,23 @@ Client.init(
       primaryKey: true,
       autoIncrement: true,
     },
-    company_name: {
-      type: DataTypes.STRING,
-      unique: true,
-      allowNull: true,
-    },
-    contact_person: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
     email: {
       type: DataTypes.STRING,
       unique: true,
-      allowNull: true,
     },
-    phone: {
+    website: {
       type: DataTypes.STRING,
-      allowNull: true,
     },
-    address: {
+    company_name: {
+      type: DataTypes.STRING,
+    },
+    industry: {
+      type: DataTypes.STRING,
+    },
+    official_email: {
+      type: DataTypes.STRING,
+    },
+    contact_person: {
       type: DataTypes.STRING,
     },
     created_at: {
@@ -41,10 +39,10 @@ Client.init(
     },
   },
   {
-    sequelize,
+    sequelize, // Sequelize instance
     modelName: 'Client',
-    tableName: 'Clients',  // Name of the table in your database
-    timestamps: false,  // Disable Sequelize automatic timestamp management (since you have created_at and updated_at)
+    tableName: 'Clients',
+    timestamps: false, // Explicitly managing created_at and updated_at
   }
 );
 
