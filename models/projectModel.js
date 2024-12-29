@@ -15,6 +15,10 @@ const Project = sequelize.define('Project', {
         type: DataTypes.STRING,
         allowNull: false,
     },
+    supervisor_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
     start_date: {
         type: DataTypes.DATE,
         allowNull: false,

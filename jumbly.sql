@@ -59,11 +59,13 @@ CREATE TABLE Projects (
     start_date DATE NOT NULL,
     end_date DATE,
     status_id INTEGER NOT NULL, -- FK for Project Statuses
+    supervisor_id INTEGER,      -- FK for Supervisors (Users table)
     description TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (client_id) REFERENCES Clients(client_id),
-    FOREIGN KEY (status_id) REFERENCES ProjectStatuses(status_id)
+    FOREIGN KEY (status_id) REFERENCES ProjectStatuses(status_id),
+    FOREIGN KEY (supervisor_id) REFERENCES Users(user_id) -- Supervisor assignment
 );
 
 -- 6. ProjectStatuses Table - precreate some

@@ -43,6 +43,8 @@ Client.init(
     modelName: 'Client',
     tableName: 'Clients',
     timestamps: false, // Explicitly managing created_at and updated_at
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
   }
 );
 

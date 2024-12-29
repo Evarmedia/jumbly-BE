@@ -50,6 +50,8 @@ const Task = sequelize.define('Task', {
 }, {
     tableName: 'Tasks',
     timestamps: false, // Disable automatic timestamps
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
 });
 
 module.exports = Task;

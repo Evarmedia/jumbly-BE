@@ -32,6 +32,8 @@ Role.init(
     modelName: 'Role',
     tableName: 'Roles',  // Name of the table in your database
     timestamps: false,  // Disable Sequelize automatic timestamp management (since you have created_at and updated_at)
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
   }
 );
 

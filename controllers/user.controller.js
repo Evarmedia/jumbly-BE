@@ -1,7 +1,3 @@
-// - `GET api/user/profile` - Retrieve authenticated user's profile [x]
-// - `PUT api/users/{user_id}` - Update user account details [x]
-// - `GET api/users/roles` - List available user roles  []
-
 const { User, Role, UserClient, Client } = require("../models/models.js");
 const { Op } = require("sequelize");
 
@@ -192,6 +188,10 @@ const getAllClients = async (req, res) => {
           where: {
             role_name: "client",
           },
+        },
+        {
+          model: Client,
+          through: { attributes: [] },
         },
       ],
     });

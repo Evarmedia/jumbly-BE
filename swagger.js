@@ -190,6 +190,10 @@ const options = {
               type: "string",
               description: "The name of the project.",
             },
+            supervisor_id: {
+              type: "integer",
+              description: "The ID of the supervisor for the project.",
+            },
             start_date: {
               type: "string",
               format: "date",
