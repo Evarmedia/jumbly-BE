@@ -1,6 +1,6 @@
 const express = require('express');
 const authMiddleware = require("../middleware/authMiddleware.js"); // Ensure user authentication
-const { downloadReport, listReports, getProjectReports, createReport } = require("../controllers/report.controller.js");
+const { createReport, downloadReport, listReports, getProjectReports, deleteProjectReports, } = require("../controllers/report.controller.js");
 
 const router = express.Router();
 
@@ -147,5 +147,32 @@ router.get('/', listReports);
  */
 // Route to retrieve reports for a specific project
 router.get('/:project_id/', getProjectReports);
+
+
+/**
+ * @swagger
+ * /api/reports/{project_id}:
+ *   delete:
+ *     summary: Delete a project's reports from the database and file system
+ *     tags: [Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: project_id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: The ID of the project whose reports should be deleted.
+ *     responses:
+ *       200:
+ *         description: Reports deleted successfully.
+ *       404:
+ *         description: No reports found for the specified project.
+ *       500:
+ *         description: Server error.
+ */
+// Route to delete a project's reports
+router.delete('/:project_id', deleteProjectReports);
 
 module.exports = router;

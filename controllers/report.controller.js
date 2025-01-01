@@ -1,8 +1,6 @@
-const { Project } = require("../models/models");
-
+const { Project, Report } = require("../models/models");
 const path = require("path");
 const fs = require("fs");
-
 
 /**
  * Generate a report for a specific project.
@@ -225,9 +223,46 @@ const getProjectReports = async (req, res) => {
   }
 };
 
+/**
+ * Delete a project's reports from the database and file system.
+ */
+const deleteProjectReports = async (req, res) => {
+  try {
+    const { project_id } = req.params;
+
+    // Find all reports for the given project
+    const reports = await Report.findAll({ where: { project_id } });
+
+    if (!reports.length) {
+      return res.status(404).json({ message: `No reports found for project with ID ${project_id}.` });
+    }
+
+    // Delete report files from the file system
+    for (const report of reports) {
+      const reportPath = report.location;
+      if (fs.existsSync(reportPath)) {
+        fs.unlinkSync(reportPath); // Remove the file
+        console.log(`Deleted file: ${reportPath}`);
+      } else {
+        console.warn(`File not found: ${reportPath}`);
+      }
+    }
+
+    // Delete reports from the database
+    await Report.destroy({ where: { project_id } });
+
+    res.status(200).json({ message: `Reports for project ID ${project_id} deleted successfully.` });
+  } catch (error) {
+    console.error('Error deleting project reports:', error.message);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+
 module.exports = {
   createReport,
   downloadReport,
   listReports,
   getProjectReports,
+  deleteProjectReports,
 };

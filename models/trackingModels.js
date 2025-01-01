@@ -2,6 +2,7 @@ const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
 class Report extends Model {}
+
 Report.init(
   {
     report_id: {
@@ -19,7 +20,7 @@ Report.init(
     },
     submitted_by: {
       type: DataTypes.INTEGER,
-      allowNull: true, // NULL for automated reports
+      allowNull: true,
       references: {
         model: 'Users',
         key: 'user_id',
@@ -27,7 +28,7 @@ Report.init(
     },
     location: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     report_content: {
       type: DataTypes.TEXT,
@@ -46,7 +47,7 @@ Report.init(
     sequelize,
     modelName: 'Report',
     tableName: 'Reports',
-    timestamps: false,
+    timestamps: false, // Explicitly manage created_at and updated_at
   }
 );
 

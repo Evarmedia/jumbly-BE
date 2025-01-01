@@ -192,7 +192,7 @@ CREATE TABLE AuditLogs (
 );
 
 
--- Create Items Table
+--17 Create Items Table
 CREATE TABLE Items (
     item_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -200,7 +200,7 @@ CREATE TABLE Items (
     description TEXT
 );
 
--- Create ProjectInventory Table
+--18 Create ProjectInventory Table
 CREATE TABLE ProjectInventory (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL,
@@ -210,7 +210,7 @@ CREATE TABLE ProjectInventory (
     FOREIGN KEY (item_id) REFERENCES Items(item_id) ON DELETE CASCADE
 );
 
--- Create Transactions Table
+--19 Create Transactions Table
 CREATE TABLE Transactions (
     transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
     item_id INTEGER NOT NULL,
@@ -222,7 +222,7 @@ CREATE TABLE Transactions (
     FOREIGN KEY (project_id) REFERENCES Projects(project_id) ON DELETE CASCADE
 );
 
--- Create InventoryLog Table
+--20 Create InventoryLog Table
 CREATE TABLE InventoryLog (
     log_id INTEGER PRIMARY KEY AUTOINCREMENT,
     item_id INTEGER NOT NULL,
