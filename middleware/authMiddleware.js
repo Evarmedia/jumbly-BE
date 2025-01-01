@@ -1,29 +1,29 @@
 const jwt = require('jsonwebtoken');
-const config = require('../config/jwt');  // assuming you are using a config file for your JWT secret key
+const sequelize = require('../config/db'); // Import Sequelize instance
+const config = require('../config/jwt'); // JWT secret configuration
 
-// Middleware function
-const authMiddleware = (req, res, next) => {
-  // Get token from Authorization header
-  const token = req.header('Authorization') && req.header('Authorization').split(' ')[1];  // Extract token from 'Bearer <token>'
+const authMiddleware = async (req, res, next) => {
+  const authHeader = req.header('Authorization');
+  const token = authHeader && authHeader.split(' ')[1];
 
-  // Check if no token is provided
   if (!token) {
     return res.status(401).json({ msg: 'No token, authorization denied' });
   }
 
   try {
-    // Verify the token
-    const decoded = jwt.verify(token, config.jwtSecret);  // Access jwtSecret directly
+    const decoded = jwt.verify(token, config.jwtSecret); // Verify the token
+    req.user = decoded.user; // Attach user details to the request
 
-    // Attach the user to the request object
-    req.user = decoded.user;
+    // Dynamically set the @current_user_id in the database session
+    // if (req.user && req.user.user_id) {
+    //   await sequelize.query(`SET @current_user_id = ${req.user.user_id}`);
+    //   console.log("Updated userID to logger Triggers");
+    // } 
+    // NOT SUPPORTED NATIVELY BY SQLITE
 
-    // console.log(req.user);
-    
-    // Call next middleware or route handler
-    next();
+    next(); // Proceed to the next middleware or route
   } catch (err) {
-    // Token is invalid or expired
+    console.error('Token verification failed:', err.message);
     res.status(401).json({ msg: 'Token is not valid' });
   }
 };

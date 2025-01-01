@@ -13,7 +13,7 @@ const Task = sequelize.define('Task', {
     },
     assigned_by: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
     },
     assigned_to: {
         type: DataTypes.INTEGER,
@@ -49,7 +49,7 @@ const Task = sequelize.define('Task', {
     },
 }, {
     tableName: 'Tasks',
-    timestamps: false, // Disable automatic timestamps
+    timestamps: true, // enabled automatic timestamps
     createdAt: 'created_at',
     updatedAt: 'updated_at',
 });

@@ -77,7 +77,7 @@ User.init(
     sequelize, // Sequelize instance
     modelName: 'User',
     tableName: 'Users',
-    timestamps: false, // Explicitly managing created_at and updated_at
+    timestamps: true, // Explicitly managing created_at and updated_at
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   }

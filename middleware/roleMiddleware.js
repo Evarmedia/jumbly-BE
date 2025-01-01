@@ -5,7 +5,7 @@ const checkRole = (...allowedRoles) => {
   return async (req, res, next) => {
     try {
       // Assuming user info is stored in req.user from previous authentication middleware
-      console.log(req.user);
+      // console.log(req.user);
       const user = await User.findByPk(req.user.user_id, {
         include: {
           model: Role,

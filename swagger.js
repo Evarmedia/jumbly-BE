@@ -348,6 +348,177 @@ const options = {
             },
           },
         },
+        Schedule: {
+          type: "object",
+          properties: {
+            schedule_id: {
+              type: "integer",
+              description: "The unique ID of the schedule.",
+            },
+            project_id: {
+              type: "integer",
+              description: "The ID of the associated project.",
+            },
+            supervisor_id: {
+              type: "integer",
+              description: "The ID of the supervisor managing the schedule.",
+            },
+            schedule_date: {
+              type: "string",
+              format: "date",
+              description: "The date of the schedule.",
+            },
+            status: {
+              type: "string",
+              enum: ["scheduled", "completed", "cancelled"],
+              description: "The status of the schedule.",
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              description: "The timestamp when the schedule was created.",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              description: "The timestamp when the schedule was last updated.",
+            },
+          },
+        },
+        TaskStatus: {
+          type: "object",
+          properties: {
+            status_id: {
+              type: "integer",
+              description: "The unique ID of the task status.",
+            },
+            status_name: {
+              type: "string",
+              description: "The name of the task status.",
+            },
+            description: {
+              type: "string",
+              description: "A description of the task status.",
+            },
+          },
+        },
+        TaskCategory: {
+          type: "object",
+          properties: {
+            category_id: {
+              type: "integer",
+              description: "The unique ID of the task category.",
+            },
+            category_name: {
+              type: "string",
+              description: "The name of the task category.",
+            },
+            description: {
+              type: "string",
+              description: "A description of the task category.",
+            },
+          },
+        },
+        ProjectStatus: {
+          type: "object",
+          properties: {
+            status_id: {
+              type: "integer",
+              description: "The unique ID of the project status.",
+            },
+            status_name: {
+              type: "string",
+              description: "The name of the project status.",
+            },
+            description: {
+              type: "string",
+              description: "A description of the project status.",
+            },
+          },
+        },
+        Report: {
+          type: "object",
+          properties: {
+            report_id: {
+              type: "integer",
+              description: "The unique ID of the report.",
+            },
+            project_id: {
+              type: "integer",
+              description: "The ID of the associated project.",
+            },
+            submitted_by: {
+              type: "integer",
+              nullable: true,
+              description:
+                "The ID of the user who generated the report (null for automated reports).",
+            },
+            location: {
+              type: "string",
+              description: "The file path or URL of the report.",
+            },
+            report_content: {
+              type: "string",
+              description: "A description or metadata of the report.",
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              description: "The timestamp when the report was created.",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              description: "The timestamp when the report was last updated.",
+            },
+            project: {
+              type: "object",
+              $ref: "#/components/schemas/Project",
+            },
+          },
+        },
+        Issue: {
+          type: "object",
+          properties: {
+            issue_id: {
+              type: "integer",
+              description: "The unique ID of the issue.",
+            },
+            task_id: {
+              type: "integer",
+              description: "The ID of the associated task.",
+            },
+            reported_by: {
+              type: "integer",
+              description: "The ID of the user reporting the issue.",
+            },
+            issue_description: {
+              type: "string",
+              description: "A detailed description of the issue.",
+            },
+            photo_attachment: {
+              type: "string",
+              nullable: true,
+              description:
+                "A URL or file path for an optional photo attachment.",
+            },
+            status: {
+              type: "string",
+              enum: ["reported", "resolved"],
+              description: "The status of the issue.",
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              description: "The timestamp when the issue was reported.",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              description: "The timestamp when the issue was last updated.",
+            },
+          },
+        },
       },
     },
     security: [

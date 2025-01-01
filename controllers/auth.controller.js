@@ -149,6 +149,7 @@ const login = async (req, res) => {
       user: {
         user_id: user.user_id,
         username: user.username,
+        role_id: user.Role.role_id,
         role_name: user.Role.role_name,
       },
     };
@@ -170,7 +171,8 @@ const login = async (req, res) => {
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.Role.role_name,
+        role_id: user.Role.role_id,
+        role_name: user.Role.role_name,
       },
     });
   } catch (error) {

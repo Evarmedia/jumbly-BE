@@ -42,7 +42,7 @@ Client.init(
     sequelize, // Sequelize instance
     modelName: 'Client',
     tableName: 'Clients',
-    timestamps: false, // Explicitly managing created_at and updated_at
+    timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   }

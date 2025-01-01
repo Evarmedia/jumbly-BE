@@ -81,12 +81,13 @@ CREATE TABLE ProjectStatuses (
 CREATE TABLE Tasks (
     task_id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL,
-    assigned_by INTEGER NOT NULL,
+    assigned_by INTEGER,
     assigned_to INTEGER,
     task_name TEXT NOT NULL,
     task_description TEXT,
     status_id INTEGER NOT NULL, -- FK for Task Statuses
     priority_id INTEGER NOT NULL, -- FK for Task Priorities
+    category_id INTEGER NOT NULL, -- FK for Task Categories
     due_date DATE NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -126,13 +127,13 @@ CREATE TABLE TaskCategories (
 );
 
 -- 11. TaskCategoryAssignments Table - JOIN Table
-CREATE TABLE TaskCategoryAssignments (
-    task_category_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    task_id INTEGER NOT NULL,
-    category_id INTEGER NOT NULL,
-    FOREIGN KEY (task_id) REFERENCES Tasks(task_id),
-    FOREIGN KEY (category_id) REFERENCES TaskCategories(category_id)
-);
+-- CREATE TABLE TaskCategoryAssignments (
+--     task_category_id INTEGER PRIMARY KEY AUTOINCREMENT,
+--     task_id INTEGER NOT NULL,
+--     category_id INTEGER NOT NULL,
+--     FOREIGN KEY (task_id) REFERENCES Tasks(task_id),
+--     FOREIGN KEY (category_id) REFERENCES TaskCategories(category_id)
+-- );
 
 -- 12. Schedules Table
 CREATE TABLE Schedules (
@@ -140,31 +141,32 @@ CREATE TABLE Schedules (
     project_id INTEGER NOT NULL,
     supervisor_id INTEGER NOT NULL,
     schedule_date DATE NOT NULL,
-    status TEXT CHECK(status IN ('scheduled', 'completed', 'cancelled')) NOT NULL,
+    status TEXT CHECK(status IN ('scheduled', 'completed', 'cancelled')) NOT NULL DEFAULT 'scheduled',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (project_id) REFERENCES Projects(project_id),
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id) ON DELETE CASCADE,
     FOREIGN KEY (supervisor_id) REFERENCES Users(user_id)
 );
 
 -- 13. ScheduleTasks Table - JOIN Table
-CREATE TABLE ScheduleTasks (
-    schedule_task_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    schedule_id INTEGER NOT NULL,
-    task_id INTEGER NOT NULL,
-    FOREIGN KEY (schedule_id) REFERENCES Schedules(schedule_id),
-    FOREIGN KEY (task_id) REFERENCES Tasks(task_id)
-);
+-- CREATE TABLE ScheduleTasks (
+--     schedule_task_id INTEGER PRIMARY KEY AUTOINCREMENT,
+--     schedule_id INTEGER NOT NULL,
+--     task_id INTEGER NOT NULL,
+--     FOREIGN KEY (schedule_id) REFERENCES Schedules(schedule_id),
+--     FOREIGN KEY (task_id) REFERENCES Tasks(task_id)
+-- );
 
 -- 14. Reports Table
 CREATE TABLE Reports (
     report_id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL,
-    submitted_by INTEGER NOT NULL,
-    report_content TEXT NOT NULL, -- Use TEXT for structured data
+    submitted_by INTEGER, -- ID of the user who generated the report (NULL for automated reports)
+    location TEXT, -- Filepath or URL where the report is stored
+    report_content TEXT NOT NULL, -- JSON or raw data for the report
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (project_id) REFERENCES Projects(project_id),
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id) ON DELETE CASCADE,
     FOREIGN KEY (submitted_by) REFERENCES Users(user_id)
 );
 
@@ -173,27 +175,30 @@ CREATE TABLE Issues (
     issue_id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INTEGER NOT NULL,
     reported_by INTEGER NOT NULL,
-    issue_description TEXT NOT NULL,
+    issue_description TEXT  ,
     status TEXT CHECK(status IN ('reported', 'resolved')) NOT NULL DEFAULT 'reported',
     photo_attachment TEXT, -- Store URLs or file references
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (task_id) REFERENCES Tasks(task_id),
+    FOREIGN KEY (task_id) REFERENCES Tasks(task_id) ON DELETE CASCADE,
     FOREIGN KEY (reported_by) REFERENCES Users(user_id)
 );
 
 -- 16. Notifications Table
 CREATE TABLE Notifications (
     notification_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    message TEXT NOT NULL,
+    user_id INTEGER NOT NULL,           -- The recipient of the notification
+    message TEXT NOT NULL,              -- Notification content
+    type TEXT,                          -- Notification type (e.g., 'task', 'system')
     status TEXT CHECK(status IN ('read', 'unread')) NOT NULL DEFAULT 'unread',
-    delivered_at DATETIME,
+    priority TEXT CHECK(priority IN ('low', 'medium', 'high')) DEFAULT 'low',
+    delivered_at DATETIME,              -- Timestamp for when the notification was delivered
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
-
--- 17. AuditLogs Table
+*
+-- 17. AuditLogs Table --Create Trigger for log
 CREATE TABLE AuditLogs (
     log_id INTEGER PRIMARY KEY AUTOINCREMENT,
     table_name TEXT NOT NULL,
@@ -213,10 +218,10 @@ INSERT INTO Roles (role_name, description)
 VALUES ('client', 'Client role with limited access to view data.');
 
 INSERT INTO Roles (role_name, description)
-VALUES ('operative', 'Operative role with permissions to manage operations.');
+VALUES ('supervisor', 'Supervisor role with permissions to oversee operations and manage users.');
 
 INSERT INTO Roles (role_name, description)
-VALUES ('supervisor', 'Supervisor role with permissions to oversee operations and manage users.');
+VALUES ('operator', 'Operator role with permissions to manage operations.');
 
 -- Pre Inserting project status
 INSERT INTO ProjectStatuses (status_name, description)

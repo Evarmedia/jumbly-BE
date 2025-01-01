@@ -7,9 +7,9 @@ const {
   getProjectDetails,
   updateProjectDetails,
   updateProjectStatus,
+  assignProjectSupervisor,
   deleteProject,
 } = require("../controllers/project.controller.js");
-const authMiddleware = require("../middleware/authMiddleware.js");
 const { checkRole } = require("../middleware/roleMiddleware.js");
 
 const router = express.Router();
@@ -66,7 +66,7 @@ const router = express.Router();
  *         description: Internal server error.
  */
 // Route to create a new project as admin
-router.post("/admin", authMiddleware, checkRole('admin'),createProjectAdmin);
+router.post("/admin", checkRole('admin'), createProjectAdmin);
 
 /**
  * @swagger
@@ -115,7 +115,7 @@ router.post("/admin", authMiddleware, checkRole('admin'),createProjectAdmin);
  *         description: Internal server error.
  */
 // Route to create a new project as a client
-router.post("/", authMiddleware, checkRole('client'), createProject);
+router.post("/", checkRole('client'), createProject);
 
 
 /**
@@ -139,7 +139,7 @@ router.post("/", authMiddleware, checkRole('client'), createProject);
  *         description: Internal server error.
  */
 // Route to list all projects
-router.get('/', authMiddleware, listAllProjects);
+router.get('/', listAllProjects);
 
 
 /**
@@ -198,7 +198,7 @@ router.get('/', authMiddleware, listAllProjects);
  *         description: Internal server error
  */
 // Route to fetch projects for the logged-in client
-router.get("/client", authMiddleware, checkRole('client'), getClientProjects);
+router.get("/client", checkRole('client'), getClientProjects);
 
 
 /**
@@ -228,7 +228,7 @@ router.get("/client", authMiddleware, checkRole('client'), getClientProjects);
  *         description: Internal server error.
  */
 // Route to retrieve a specific project by its ID
-router.get('/:project_id', authMiddleware, getProjectDetails);
+router.get('/:project_id', getProjectDetails);
 
 
 /**
@@ -286,9 +286,8 @@ router.get('/:project_id', authMiddleware, getProjectDetails);
  *       500:
  *         description: Internal server error.
  */
-
 // Route to update project details
-router.put('/:project_id', authMiddleware, checkRole('client', 'admin'), updateProjectDetails);
+router.put('/:project_id', checkRole('client', 'admin'), updateProjectDetails);
 
 
 /**
@@ -347,7 +346,78 @@ router.put('/:project_id', authMiddleware, checkRole('client', 'admin'), updateP
  *         description: Internal server error.
  */
 // Route to update project status
-router.patch('/:project_id/status', authMiddleware, updateProjectStatus);
+router.patch('/:project_id/status', updateProjectStatus);
+
+
+/**
+ * @swagger
+ * /api/projects/{project_id}/assign:
+ *   patch:
+ *     summary: Assign a supervisor to a project
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []  # Ensure authentication is required
+ *     parameters:
+ *       - in: path
+ *         name: project_id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: The ID of the project
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               supervisor_id:
+ *                 type: integer
+ *                 description: The ID of the supervisor to assign
+ *             required:
+ *               - supervisor_id
+ *     responses:
+ *       200:
+ *         description: Supervisor assigned successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Project supervisor assigned successfully.
+ *                 project:
+ *                   type: object
+ *                   properties:
+ *                     project_id:
+ *                       type: integer
+ *                       description: The ID of the project
+ *                     project_name:
+ *                       type: string
+ *                       description: The name of the project
+ *                     supervisor:
+ *                       type: object
+ *                       description: Details of the assigned supervisor
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                           description: The ID of the supervisor
+ *                         first_name:
+ *                           type: string
+ *                           description: The first name of the supervisor
+ *                         last_name:
+ *                           type: string
+ *                           description: The last name of the supervisor
+ *       400:
+ *         description: Bad request. Missing supervisor_id.
+ *       404:
+ *         description: Project or supervisor not found.
+ *       500:
+ *         description: Internal server error.
+ */
+// Route for assigning a supervisor to a project
+router.patch('/:project_id/assign', assignProjectSupervisor);
 
 
 /**
@@ -379,7 +449,8 @@ router.patch('/:project_id/status', authMiddleware, updateProjectStatus);
  *       500:
  *         description: Internal server error
  */
-// Route to delete a project
-router.delete('/:project_id', authMiddleware, deleteProject);
+// Route to delete a project -client and admin
+router.delete('/:project_id', checkRole('client', 'admin'), deleteProject);
+
 
 module.exports = router;

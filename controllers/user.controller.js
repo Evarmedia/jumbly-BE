@@ -164,7 +164,7 @@ const getAllStaff = async (req, res) => {
           model: Role,
           where: {
             role_name: {
-              [Op.in]: ["operative", "supervisor"],
+              [Op.in]: ["operator", "supervisor"],
             },
           },
         },
