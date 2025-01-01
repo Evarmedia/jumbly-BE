@@ -8,6 +8,8 @@ const taskRoutes = require('./routes/task.route.js');
 const sysconfigRoutes = require('./routes/sysconfig.route.js');
 const scheduleRoutes = require('./routes/schedule.route.js');
 const reportRoutes = require('./routes/report.route.js');
+const notificationRoutes = require('./routes/notification.route.js');
+const syncRoute = require('./routes/sync.route.js');
 
 const cron = require('node-cron');
 const reportQueue = require('./queues/reportQueue.js');
@@ -25,8 +27,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
-
-
 // Routes
 app.use('/api/auth', authRoutes); // authentication routes
 app.use('/api/users', userRoutes); // general users management routes
@@ -35,10 +35,11 @@ app.use('/api/tasks', taskRoutes); // tasks management routes
 app.use('/api/admin', sysconfigRoutes); // admin/system configuration management routes
 app.use('/api/schedules', scheduleRoutes); // schedules management routes
 app.use('/api/reports', reportRoutes); // schedules management routes
+app.use('/api/notifications', notificationRoutes); // Notification routes
+app.use('/api/sync', syncRoute); // sync route
 
-
-// GET /testlog: Retrieve logs
-app.get('/logs', async (req, res) => {
+// GET /api/log: Retrieve logs
+app.get('/api/logs', async (req, res) => {
   try {
     const [log] = await sequelize.query(`SELECT * FROM AuditLogs`);
     res.status(200).json({ log });

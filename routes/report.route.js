@@ -1,8 +1,51 @@
 const express = require('express');
 const authMiddleware = require("../middleware/authMiddleware.js"); // Ensure user authentication
-const { downloadReport, listReports, getProjectReports, } = require("../controllers/report.controller.js");
+const { downloadReport, listReports, getProjectReports, createReport } = require("../controllers/report.controller.js");
 
 const router = express.Router();
+
+
+/**
+ * @swagger
+ * /api/reports/create:
+ *   post:
+ *     summary: Generate a report for a specific project
+ *     tags: [Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               project_id:
+ *                 type: integer
+ *                 description: The ID of the project for which to generate the report.
+ *             required:
+ *               - project_id
+ *     responses:
+ *       201:
+ *         description: Report generated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Report generated successfully.
+ *                 report_url:
+ *                   type: string
+ *                   example: /api/reports/download/1
+ *       404:
+ *         description: Project not found.
+ *       500:
+ *         description: Server error.
+ */
+router.post('/create', authMiddleware, createReport);
+
 
 /**
  * @swagger
@@ -33,6 +76,7 @@ const router = express.Router();
  *         description: Server error.
  */
 router.get('/download/:project_id', downloadReport);
+
 
 /**
  * @swagger

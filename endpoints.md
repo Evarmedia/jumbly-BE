@@ -91,17 +91,13 @@
 
 # Cross-Role Endpoints
 ## Notifications
-- `POST api/notifications` - create user notifications []
-- `GET api/notifications` - Retrieve user notifications []
-- `PATCH api/notifications/{notificationId}/status` - Mark notification as read/unread []
+- `POST api/notifications` - create user notifications ✅
+- `GET api/notifications` - Retrieve user notifications ✅
+- `PATCH api/notifications/{notificationId}/status` - Mark notification as read/unread ✅
 
 ## Integration & Sync
 - `POST api/sync/offline-data` - Synchronize offline-entered data
 
 # Audit & Compliance
-- `GET api/audit-logs` - Retrieve system audit logs
-- `GET api/system/compliance-status` - Check data protection compliance
-
-# Support & Maintenance
-- `GET api/system/updates` - Check for system updates
-- `GET api/support/resources` - Access support documentation
+- `GET api/logs` - Retrieve system audit logs ✅
+- `GET api/system/compliance-status` - Check data protection compliance // TO BE DONE IN FRONTEND

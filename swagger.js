@@ -519,7 +519,52 @@ const options = {
             },
           },
         },
-      },
+        Notifications: {
+          "type": "object",
+          "properties": {
+            "notification_id": {
+              "type": "integer",
+              "description": "The unique ID of the notification."
+            },
+            "user_id": {
+              "type": "integer",
+              "description": "The ID of the user to whom the notification is sent."
+            },
+            "message": {
+              "type": "string",
+              "description": "The content of the notification."
+            },
+            "type": {
+              "type": "string",
+              "description": "The type of notification (e.g., 'task', 'system')."
+            },
+            "status": {
+              "type": "string",
+              "enum": ["read", "unread"],
+              "description": "The read/unread status of the notification."
+            },
+            "priority": {
+              "type": "string",
+              "enum": ["low", "medium", "high"],
+              "description": "The priority level of the notification."
+            },
+            "delivered_at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The timestamp when the notification was delivered."
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The timestamp when the notification was created."
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The timestamp when the notification was last updated."
+            }
+          }
+        }      },
     },
     security: [
       {

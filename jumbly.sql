@@ -98,7 +98,6 @@ CREATE TABLE Tasks (
     FOREIGN KEY (priority_id) REFERENCES TaskPriorities(priority_id)
 );
 
-
 -- 8. TaskStatuses Table - precreate some
 CREATE TABLE TaskStatuses (
     status_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -126,15 +125,6 @@ CREATE TABLE TaskCategories (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 11. TaskCategoryAssignments Table - JOIN Table
--- CREATE TABLE TaskCategoryAssignments (
---     task_category_id INTEGER PRIMARY KEY AUTOINCREMENT,
---     task_id INTEGER NOT NULL,
---     category_id INTEGER NOT NULL,
---     FOREIGN KEY (task_id) REFERENCES Tasks(task_id),
---     FOREIGN KEY (category_id) REFERENCES TaskCategories(category_id)
--- );
-
 -- 12. Schedules Table
 CREATE TABLE Schedules (
     schedule_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -148,16 +138,7 @@ CREATE TABLE Schedules (
     FOREIGN KEY (supervisor_id) REFERENCES Users(user_id)
 );
 
--- 13. ScheduleTasks Table - JOIN Table
--- CREATE TABLE ScheduleTasks (
---     schedule_task_id INTEGER PRIMARY KEY AUTOINCREMENT,
---     schedule_id INTEGER NOT NULL,
---     task_id INTEGER NOT NULL,
---     FOREIGN KEY (schedule_id) REFERENCES Schedules(schedule_id),
---     FOREIGN KEY (task_id) REFERENCES Tasks(task_id)
--- );
-
--- 14. Reports Table
+-- 13. Reports Table
 CREATE TABLE Reports (
     report_id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL,
@@ -170,7 +151,7 @@ CREATE TABLE Reports (
     FOREIGN KEY (submitted_by) REFERENCES Users(user_id)
 );
 
--- 15. Issues Table
+-- 14. Issues Table
 CREATE TABLE Issues (
     issue_id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INTEGER NOT NULL,
@@ -184,7 +165,7 @@ CREATE TABLE Issues (
     FOREIGN KEY (reported_by) REFERENCES Users(user_id)
 );
 
--- 16. Notifications Table
+-- 15. Notifications Table
 CREATE TABLE Notifications (
     notification_id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,           -- The recipient of the notification
@@ -192,13 +173,13 @@ CREATE TABLE Notifications (
     type TEXT,                          -- Notification type (e.g., 'task', 'system')
     status TEXT CHECK(status IN ('read', 'unread')) NOT NULL DEFAULT 'unread',
     priority TEXT CHECK(priority IN ('low', 'medium', 'high')) DEFAULT 'low',
-    delivered_at DATETIME,              -- Timestamp for when the notification was delivered
+    delivered_at DATETIME DEFAULT CURRENT_TIMESTAMP,              -- Timestamp for when the notification was delivered
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
-*
--- 17. AuditLogs Table --Create Trigger for log
+
+-- 16. AuditLogs Table --Create Trigger for log
 CREATE TABLE AuditLogs (
     log_id INTEGER PRIMARY KEY AUTOINCREMENT,
     table_name TEXT NOT NULL,
@@ -209,6 +190,202 @@ CREATE TABLE AuditLogs (
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
+
+
+-- Create Items Table
+CREATE TABLE Items (
+    item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    quantity INTEGER NOT NULL CHECK (quantity >= 0),
+    description TEXT
+);
+
+-- Create ProjectInventory Table
+CREATE TABLE ProjectInventory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    item_id INTEGER NOT NULL,
+    quantity INTEGER NOT NULL CHECK (quantity >= 0),
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY (item_id) REFERENCES Items(item_id) ON DELETE CASCADE
+);
+
+-- Create Transactions Table
+CREATE TABLE Transactions (
+    transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_id INTEGER NOT NULL,
+    project_id INTEGER NOT NULL,
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    action TEXT NOT NULL CHECK (action IN ('borrow', 'return')),
+    date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (item_id) REFERENCES Items(item_id) ON DELETE CASCADE,
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id) ON DELETE CASCADE
+);
+
+-- Create InventoryLog Table
+CREATE TABLE InventoryLog (
+    log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_id INTEGER NOT NULL,
+    change_type TEXT NOT NULL CHECK (change_type IN ('insert', 'update', 'delete')),
+    quantity_change INTEGER NOT NULL,
+    change_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (item_id) REFERENCES Items(item_id)
+);
+
+-- Trigger: Prevent Borrowing More Items Than Available
+CREATE TRIGGER BeforeBorrow
+BEFORE INSERT ON Transactions
+FOR EACH ROW
+BEGIN
+    -- Ensure the action is 'borrow'
+    IF NEW.action = 'borrow' THEN
+        -- Check if enough items are available in the main inventory
+        DECLARE available_quantity INTEGER;
+        SELECT quantity INTO available_quantity
+        FROM Items
+        WHERE item_id = NEW.item_id;
+
+        IF available_quantity < NEW.quantity THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Insufficient quantity in main inventory for this borrow request.';
+        END IF;
+
+        -- Reduce the quantity from the main inventory
+        UPDATE Items
+        SET quantity = quantity - NEW.quantity
+        WHERE item_id = NEW.item_id;
+    END IF;
+END;
+
+-- Trigger: Prevent Returning Items Not Borrowed
+CREATE TRIGGER BeforeReturn
+BEFORE INSERT ON Transactions
+FOR EACH ROW
+BEGIN
+    -- Ensure the action is 'return'
+    IF NEW.action = 'return' THEN
+        -- Check if the project has enough borrowed items to return
+        DECLARE borrowed_quantity INTEGER;
+        SELECT quantity INTO borrowed_quantity
+        FROM ProjectInventory
+        WHERE project_id = NEW.project_id AND item_id = NEW.item_id;
+
+        IF borrowed_quantity < NEW.quantity THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Cannot return more items than currently borrowed.';
+        END IF;
+
+        -- Update the ProjectInventory table to reduce borrowed items
+        UPDATE ProjectInventory
+        SET quantity = quantity - NEW.quantity
+        WHERE project_id = NEW.project_id AND item_id = NEW.item_id;
+
+        -- Add the quantity back to the main inventory
+        UPDATE Items
+        SET quantity = quantity + NEW.quantity
+        WHERE item_id = NEW.item_id;
+    END IF;
+END;
+
+CREATE TRIGGER BeforeDeleteProject
+BEFORE DELETE ON Projects
+FOR EACH ROW
+BEGIN
+    -- Return all items from the project's inventory to the main inventory
+    UPDATE Items
+    SET quantity = quantity + (
+        SELECT SUM(quantity)
+        FROM ProjectInventory
+        WHERE project_id = OLD.project_id
+    )
+    WHERE item_id IN (
+        SELECT item_id
+        FROM ProjectInventory
+        WHERE project_id = OLD.project_id
+    );
+
+    -- Clear the project's inventory explicitly (optional but recommended for clarity)
+    DELETE FROM ProjectInventory WHERE project_id = OLD.project_id;
+END;
+
+-- Trigger: Log All Inventory Changes
+CREATE TRIGGER LogInventoryChange
+AFTER UPDATE OR INSERT OR DELETE ON Items
+FOR EACH ROW
+BEGIN
+    -- Log additions or updates
+    IF NEW.quantity IS NOT NULL THEN
+        INSERT INTO InventoryLog (item_id, change_type, quantity_change)
+        VALUES (NEW.item_id, 'update', NEW.quantity - COALESCE(OLD.quantity, 0));
+    END IF;
+
+    -- Log deletions
+    IF OLD.quantity IS NOT NULL AND NEW.quantity IS NULL THEN
+        INSERT INTO InventoryLog (item_id, change_type, quantity_change)
+        VALUES (OLD.item_id, 'delete', -OLD.quantity);
+    END IF;
+END;
+
+-- Trigger: to update updated_at to current datetime
+CREATE TRIGGER update_updated_at
+AFTER UPDATE ON Projects
+FOR EACH ROW
+BEGIN
+    UPDATE Projects
+    SET updated_at = CURRENT_TIMESTAMP
+    WHERE project_id = OLD.project_id;
+END;
+
+
+-- Indexes for Users Table
+CREATE INDEX idx_users_role_id ON Users(role_id);
+CREATE INDEX idx_users_status ON Users(status);
+CREATE INDEX idx_users_email ON Users(email);
+
+
+-- Indexes for Clients Table
+-- CREATE INDEX idx_clients_email ON Clients(email);
+-- CREATE INDEX idx_clients_company_name ON Clients(company_name);
+-- CREATE INDEX idx_clients_industry ON Clients(industry);
+
+-- Indexes for UserClients Table
+CREATE INDEX idx_user_clients_user_id ON UserClients(user_id);
+CREATE INDEX idx_user_clients_client_id ON UserClients(client_id);
+
+-- Indexes for Projects Table
+CREATE INDEX idx_projects_client_id ON Projects(client_id);
+CREATE INDEX idx_projects_supervisor_id ON Projects(supervisor_id);
+CREATE INDEX idx_projects_status_id ON Projects(status_id);
+
+-- Indexes for Tasks Table
+CREATE INDEX idx_tasks_project_id ON Tasks(project_id);
+CREATE INDEX idx_tasks_assigned_by ON Tasks(assigned_by);
+CREATE INDEX idx_tasks_assigned_to ON Tasks(assigned_to);
+CREATE INDEX idx_tasks_status_id ON Tasks(status_id);
+CREATE INDEX idx_tasks_priority_id ON Tasks(priority_id);
+CREATE INDEX idx_tasks_category_id ON Tasks(category_id);
+
+
+-- Indexes for Schedules Table
+CREATE INDEX idx_schedules_project_id ON Schedules(project_id);
+CREATE INDEX idx_schedules_supervisor_id ON Schedules(supervisor_id);
+
+-- Indexes for Reports Table
+CREATE INDEX idx_reports_project_id ON Reports(project_id);
+-- CREATE INDEX idx_reports_submitted_by ON Reports(submitted_by);
+
+-- Indexes for Issues Table
+CREATE INDEX idx_issues_task_id ON Issues(task_id);
+CREATE INDEX idx_issues_reported_by ON Issues(reported_by);
+
+-- Indexes for Notifications Table
+CREATE INDEX idx_notifications_user_id ON Notifications(user_id);
+
+-- Indexes for AuditLogs Table
+CREATE INDEX idx_auditlogs_user_id ON AuditLogs(user_id);
+CREATE INDEX idx_auditlogs_table_name ON AuditLogs(table_name);
+CREATE INDEX idx_auditlogs_action ON AuditLogs(action);
+
 
 -- Pre Inserting roles into the Roles table
 INSERT INTO Roles (role_name, description)
@@ -255,12 +432,3 @@ VALUES
 ('projects', 'Tasks related to ongoing projects'),
 ('administrative', 'Tasks related to administrative tasks'),
 ('personal', 'Tasks related to personal development and goals');
-
-CREATE TRIGGER update_updated_at
-AFTER UPDATE ON Projects
-FOR EACH ROW
-BEGIN
-    UPDATE Projects
-    SET updated_at = CURRENT_TIMESTAMP
-    WHERE project_id = OLD.project_id;
-END;

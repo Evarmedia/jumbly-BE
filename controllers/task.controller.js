@@ -1,10 +1,9 @@
+const { createNotification } = require("../utils/notification");
 const {
   Task,
   Project,
-  Client,
   User,
   Role,
-  UserClient,
   TaskStatus,
   TaskPriority,
   TaskCategory,
@@ -454,6 +453,12 @@ const updateTaskStatus = async (req, res) => {
       ],
     });
 
+    // Create a notification for the assigned user
+    await createNotification(
+      updatedTask.assigned_to,
+      `task status has been updated to: ${updatedTask.status.status_name}`
+    );
+
     res.status(200).json({
       message: "Task status updated successfully.",
       task: updatedTask,
@@ -515,8 +520,16 @@ const reassignTask = async (req, res) => {
       ],
     });
 
+    // Create a notification for the assigned user
+    await createNotification(
+      assigned_to,
+      `You have been assigned to task: ${task.task_name}`,
+      "task",
+      "high"
+    );
+
     res.status(200).json({
-      message: "Task reassigned successfully.",
+      message: "Task assigned successfully.",
       task: updatedTask,
     });
   } catch (error) {
@@ -574,6 +587,16 @@ const reportIssue = async (req, res) => {
       issue_description,
       photo_attachment,
     });
+
+    // Notify the task assignee about the issue
+    if (task.assigned_to) {
+      await createNotification(
+        task.assigned_to,
+        `An issue has been reported for task: ${task.task_name}`,
+        "issue",
+        "medium"
+      );
+    }
 
     res.status(201).json({
       message: "Issue reported successfully.",
