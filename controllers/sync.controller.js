@@ -1,4 +1,4 @@
-const { Project, Task, Issue, Schedule } = require('../models');
+const { Project, Task, Issue, Schedule } = require('../models/models');
 
 /**
  * Synchronize offline-entered data with the server.
