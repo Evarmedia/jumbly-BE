@@ -38,6 +38,7 @@ app.use('/api/reports', reportRoutes); // schedules management routes
 app.use('/api/notifications', notificationRoutes); // Notification routes
 app.use('/api/sync', syncRoute); // sync route
 
+// Logs
 // GET /api/log: Retrieve logs
 app.get('/api/logs', async (req, res) => {
   try {
@@ -48,6 +49,36 @@ app.get('/api/logs', async (req, res) => {
     res.status(500).json({ msg: 'Internal server error' });
   }
 });
+
+app.get('/api/inventory/logs', async (req, res) => {
+  try {
+    const [logs] = await sequelize.query(`
+      SELECT 
+        log_id,
+        item_id,
+        change_type,
+        quantity_change,
+        change_timestamp
+      FROM 
+        InventoryLog
+      ORDER BY 
+        change_timestamp DESC;
+    `);
+
+    if (!logs.length) {
+      return res.status(404).json({ message: 'No inventory logs found.' });
+    }
+
+    res.status(200).json({
+      message: 'Inventory logs retrieved successfully.',
+      logs,
+    });
+  } catch (error) {
+    console.error('Error fetching inventory logs:', error.message);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
 
 // Test server response 
 app.get('/', (req, res) => {

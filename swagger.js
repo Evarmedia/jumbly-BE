@@ -520,51 +520,124 @@ const options = {
           },
         },
         Notifications: {
-          "type": "object",
-          "properties": {
-            "notification_id": {
-              "type": "integer",
-              "description": "The unique ID of the notification."
+          type: "object",
+          properties: {
+            notification_id: {
+              type: "integer",
+              description: "The unique ID of the notification.",
             },
-            "user_id": {
-              "type": "integer",
-              "description": "The ID of the user to whom the notification is sent."
+            user_id: {
+              type: "integer",
+              description:
+                "The ID of the user to whom the notification is sent.",
             },
-            "message": {
-              "type": "string",
-              "description": "The content of the notification."
+            message: {
+              type: "string",
+              description: "The content of the notification.",
             },
-            "type": {
-              "type": "string",
-              "description": "The type of notification (e.g., 'task', 'system')."
+            type: {
+              type: "string",
+              description: "The type of notification (e.g., 'task', 'system').",
             },
-            "status": {
-              "type": "string",
-              "enum": ["read", "unread"],
-              "description": "The read/unread status of the notification."
+            status: {
+              type: "string",
+              enum: ["read", "unread"],
+              description: "The read/unread status of the notification.",
             },
-            "priority": {
-              "type": "string",
-              "enum": ["low", "medium", "high"],
-              "description": "The priority level of the notification."
+            priority: {
+              type: "string",
+              enum: ["low", "medium", "high"],
+              description: "The priority level of the notification.",
             },
-            "delivered_at": {
-              "type": "string",
-              "format": "date-time",
-              "description": "The timestamp when the notification was delivered."
+            delivered_at: {
+              type: "string",
+              format: "date-time",
+              description: "The timestamp when the notification was delivered.",
             },
-            "created_at": {
-              "type": "string",
-              "format": "date-time",
-              "description": "The timestamp when the notification was created."
+            created_at: {
+              type: "string",
+              format: "date-time",
+              description: "The timestamp when the notification was created.",
             },
-            "updated_at": {
-              "type": "string",
-              "format": "date-time",
-              "description": "The timestamp when the notification was last updated."
-            }
-          }
-        }      },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              description:
+                "The timestamp when the notification was last updated.",
+            },
+          },
+        },
+        Item: {
+          type: "object",
+          properties: {
+            item_id: {
+              type: "integer",
+              description: "The unique ID of the item.",
+            },
+            name: {
+              type: "string",
+              description: "The name of the item.",
+            },
+            quantity: {
+              type: "integer",
+              description: "The quantity of the item.",
+            },
+            description: {
+              type: "string",
+              description: "A description of the item.",
+            },
+          },
+        },
+        ProjectInventory: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              description: "The unique ID of the project inventory record.",
+            },
+            project_id: {
+              type: "integer",
+              description: "The ID of the project.",
+            },
+            item: {
+              $ref: "#/components/schemas/Item",
+            },
+          },
+        },
+        Transaction: {
+          type: "object",
+          properties: {
+            transaction_id: {
+              type: "integer",
+              description: "The unique ID of the transaction.",
+            },
+            item_id: {
+              type: "integer",
+              description: "The ID of the item involved in the transaction.",
+            },
+            project_id: {
+              type: "integer",
+              description:
+                "The ID of the project associated with the transaction.",
+            },
+            quantity: {
+              type: "integer",
+              description:
+                "The quantity of the item involved in the transaction.",
+            },
+            action: {
+              type: "string",
+              enum: ["borrow", "return"],
+              description: "The type of transaction (borrow or return).",
+            },
+            date: {
+              type: "string",
+              format: "date-time",
+              description: "The timestamp when the transaction occurred.",
+            },
+          },
+        },
+      },
     },
     security: [
       {

@@ -73,22 +73,22 @@
 
 ## Inventory Management:
 ### Inventory Management (Admin)
-- `POST /api/inventory` - Create an item in the main inventory.
-- `GET /api/inventory` - Retrieve a list of all items in the main inventory.
-- `GET /api/inventory/:item_id` - Retrieve details of a specific item.
-- `GET /api/inventory/:project_id/project` - Retrieve the list of items in a specific project's inventory.
-- `PUT /api/inventory/:item_id` - Update item details (name, quantity, description).
-- `DELETE /api/inventory/:item_id` - Delete an item from the main inventory.
+- `POST /api/inventory` - Create an item in the main items inventory.✅
+- `GET /api/inventory` - Retrieve a list of all items in the main items inventory.✅
+- `GET /api/inventory/:item_id` - Retrieve details of a specific item.✅
+- `GET /api/inventory/:project_id/project` - Retrieve the list of items in a specific project's inventory.✅
+- `PUT /api/inventory/:item_id` - Update item details (name, quantity, description).✅
+- `DELETE /api/inventory/:item_id` - Delete an item from the main inventory.✅
 ### Supervisor Inventory Operations
-- `POST /api/transactions/borrow` - Borrow an item from the main inventory to a project's inventory.
-- `POST /api/admin/borrow` - admin can Borrow an item from the main inventory to a project's inventory.
-- `POST /api/transactions/return` - Return an item from a project's inventory to the main inventory.
-- `POST /api/admin/return` - admin can Return an item from a project's inventory to the main inventory.
+- `POST /api/transactions/borrow` - Borrow an item from the main inventory to a project's inventory.✅
+- `POST /api/admin/borrow` - admin can Borrow an item from the main inventory to a project's inventory.✅
+- `POST /api/transactions/return` - Return an item from a project's inventory to the main inventory.✅
+- `POST /api/admin/return` - admin can Return an item from a project's inventory to the main inventory.✅
 ### Transaction Management
-- GET /api/transactions - Retrieve a list of all transactions (borrow/return logs).
-- GET /api/transactions/:transaction_id - Retrieve details of a specific transaction.
+- GET /api/transactions - Retrieve a list of all transactions (borrow/return logs).✅
+- GET /api/transactions/:transaction_id - Retrieve details of a specific transaction.✅
 ### Logs (Optional)
-- GET /api/inventory/logs - Retrieve the inventory change logs.
+- GET /api/inventory/logs - Retrieve the inventory change logs.✅
 
 # Cross-Role Endpoints
 ## Notifications

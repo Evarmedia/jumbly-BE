@@ -236,94 +236,98 @@ CREATE TABLE InventoryLog (
 CREATE TRIGGER BeforeBorrow
 BEFORE INSERT ON Transactions
 FOR EACH ROW
+WHEN NEW.action = 'borrow' AND (
+    SELECT quantity FROM Items WHERE item_id = NEW.item_id
+) < NEW.quantity
 BEGIN
-    -- Ensure the action is 'borrow'
-    IF NEW.action = 'borrow' THEN
-        -- Check if enough items are available in the main inventory
-        DECLARE available_quantity INTEGER;
-        SELECT quantity INTO available_quantity
-        FROM Items
-        WHERE item_id = NEW.item_id;
+    SELECT RAISE(ABORT, 'Insufficient quantity in main inventory for this borrow request.');
+END;
 
-        IF available_quantity < NEW.quantity THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Insufficient quantity in main inventory for this borrow request.';
-        END IF;
-
-        -- Reduce the quantity from the main inventory
-        UPDATE Items
-        SET quantity = quantity - NEW.quantity
-        WHERE item_id = NEW.item_id;
-    END IF;
+-- Update the Items table only if the action is 'borrow'
+CREATE TRIGGER UpdateItemsForBorrow
+AFTER INSERT ON Transactions
+FOR EACH ROW
+WHEN NEW.action = 'borrow'
+BEGIN
+    UPDATE Items
+    SET quantity = quantity - NEW.quantity
+    WHERE item_id = NEW.item_id;
 END;
 
 -- Trigger: Prevent Returning Items Not Borrowed
 CREATE TRIGGER BeforeReturn
 BEFORE INSERT ON Transactions
 FOR EACH ROW
+WHEN NEW.action = 'return' AND (
+    SELECT quantity FROM ProjectInventory WHERE project_id = NEW.project_id AND item_id = NEW.item_id
+) < NEW.quantity
 BEGIN
-    -- Ensure the action is 'return'
-    IF NEW.action = 'return' THEN
-        -- Check if the project has enough borrowed items to return
-        DECLARE borrowed_quantity INTEGER;
-        SELECT quantity INTO borrowed_quantity
-        FROM ProjectInventory
-        WHERE project_id = NEW.project_id AND item_id = NEW.item_id;
-
-        IF borrowed_quantity < NEW.quantity THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Cannot return more items than currently borrowed.';
-        END IF;
-
-        -- Update the ProjectInventory table to reduce borrowed items
-        UPDATE ProjectInventory
-        SET quantity = quantity - NEW.quantity
-        WHERE project_id = NEW.project_id AND item_id = NEW.item_id;
-
-        -- Add the quantity back to the main inventory
-        UPDATE Items
-        SET quantity = quantity + NEW.quantity
-        WHERE item_id = NEW.item_id;
-    END IF;
+    SELECT RAISE(ABORT, 'Cannot return more items than currently borrowed.');
 END;
 
+-- Update the ProjectInventory and Items tables only if the action is 'return'
+CREATE TRIGGER UpdateItemsForReturn
+AFTER INSERT ON Transactions
+FOR EACH ROW
+WHEN NEW.action = 'return'
+BEGIN
+    UPDATE ProjectInventory
+    SET quantity = quantity - NEW.quantity
+    WHERE project_id = NEW.project_id AND item_id = NEW.item_id;
+
+    UPDATE Items
+    SET quantity = quantity + NEW.quantity
+    WHERE item_id = NEW.item_id;
+END;
+
+-- Before delete
 CREATE TRIGGER BeforeDeleteProject
 BEFORE DELETE ON Projects
 FOR EACH ROW
 BEGIN
-    -- Return all items from the project's inventory to the main inventory
+    -- Safely return all items from the project's inventory to the main inventory
     UPDATE Items
-    SET quantity = quantity + (
+    SET quantity = quantity + COALESCE((
         SELECT SUM(quantity)
         FROM ProjectInventory
         WHERE project_id = OLD.project_id
-    )
+    ), 0)
     WHERE item_id IN (
         SELECT item_id
         FROM ProjectInventory
         WHERE project_id = OLD.project_id
     );
 
-    -- Clear the project's inventory explicitly (optional but recommended for clarity)
+    -- Explicitly delete the project's inventory if not using ON DELETE CASCADE
     DELETE FROM ProjectInventory WHERE project_id = OLD.project_id;
 END;
 
 -- Trigger: Log All Inventory Changes
-CREATE TRIGGER LogInventoryChange
-AFTER UPDATE OR INSERT OR DELETE ON Items
+-- Log additions
+CREATE TRIGGER LogInventoryInsert
+AFTER INSERT ON Items
 FOR EACH ROW
 BEGIN
-    -- Log additions or updates
-    IF NEW.quantity IS NOT NULL THEN
-        INSERT INTO InventoryLog (item_id, change_type, quantity_change)
-        VALUES (NEW.item_id, 'update', NEW.quantity - COALESCE(OLD.quantity, 0));
-    END IF;
+    INSERT INTO InventoryLog (item_id, change_type, quantity_change, change_timestamp)
+    VALUES (NEW.item_id, 'insert', NEW.quantity, CURRENT_TIMESTAMP);
+END;
 
-    -- Log deletions
-    IF OLD.quantity IS NOT NULL AND NEW.quantity IS NULL THEN
-        INSERT INTO InventoryLog (item_id, change_type, quantity_change)
-        VALUES (OLD.item_id, 'delete', -OLD.quantity);
-    END IF;
+-- Log updates
+CREATE TRIGGER LogInventoryUpdate
+AFTER UPDATE ON Items
+FOR EACH ROW
+BEGIN
+    INSERT INTO InventoryLog (item_id, change_type, quantity_change, change_timestamp)
+    VALUES (NEW.item_id, 'update', NEW.quantity - COALESCE(OLD.quantity, 0), CURRENT_TIMESTAMP);
+END;
+
+-- Log deletions
+CREATE TRIGGER LogInventoryDelete
+AFTER DELETE ON Items
+FOR EACH ROW
+BEGIN
+    INSERT INTO InventoryLog (item_id, change_type, quantity_change, change_timestamp)
+    VALUES (OLD.item_id, 'delete', -OLD.quantity, CURRENT_TIMESTAMP);
 END;
 
 -- Trigger: to update updated_at to current datetime
