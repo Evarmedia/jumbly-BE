@@ -1,6 +1,5 @@
 const express = require('express');
 const { createTask, getProjectTasks, getAllTasks, getTaskDetails, getOperatorTasks, updateTaskDetails, updateTaskStatus, reassignTask, deleteTask, reportIssue, listIssues, getTaskIssues, updateIssueStatus } = require('../controllers/task.controller');
-const authMiddleware = require('../middleware/authMiddleware');
 const {checkRole} = require('../middleware/roleMiddleware.js');
 
 
@@ -69,7 +68,7 @@ const router = express.Router();
  *         description: Internal server error.
  */
 // Route to create a new task
-router.post('/', authMiddleware, createTask);
+router.post('/', createTask);
 
 
 /**
@@ -99,19 +98,62 @@ router.post('/', authMiddleware, createTask);
  *       500:
  *         description: Internal server error
  */
-router.get('/projects/:project_id/', authMiddleware, getProjectTasks);
+router.get('/projects/:project_id/', getProjectTasks);
 
 /**
  * @swagger
  * /api/tasks:
  *   get:
- *     summary: List all tasks - permissions(admin)
+ *     summary: Retrieve a list of tasks with filters, queries, and pagination
  *     tags: [Tasks]
- *     security:
- *       - bearerAuth: []  # Ensure authentication is required
+ *     parameters:
+ *       - in: query
+ *         name: project_id
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Filter tasks by project ID
+ *       - in: query
+ *         name: status_id
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Filter tasks by status ID
+ *       - in: query
+ *         name: priority_id
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Filter tasks by priority ID
+ *       - in: query
+ *         name: category_id
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Filter tasks by category ID
+ *       - in: query
+ *         name: assigned_to
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Filter tasks assigned to a specific user
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         required: false
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         required: false
+ *         description: Number of tasks per page
  *     responses:
  *       200:
- *         description: Tasks fetched successfully.
+ *         description: List of tasks retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -123,14 +165,77 @@ router.get('/projects/:project_id/', authMiddleware, getProjectTasks);
  *                 tasks:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Task'
+ *                     type: object
+ *                     properties:
+ *                       task_id:
+ *                         type: integer
+ *                         description: The unique ID of the task
+ *                       task_name:
+ *                         type: string
+ *                         description: The name of the task
+ *                       project:
+ *                         type: object
+ *                         properties:
+ *                           project_id:
+ *                             type: integer
+ *                             description: The ID of the associated project
+ *                           project_name:
+ *                             type: string
+ *                             description: The name of the associated project
+ *                       status:
+ *                         type: object
+ *                         properties:
+ *                           status_id:
+ *                             type: integer
+ *                             description: The ID of the task's status
+ *                           status_name:
+ *                             type: string
+ *                             description: The name of the task's status
+ *                       priority:
+ *                         type: object
+ *                         properties:
+ *                           priority_id:
+ *                             type: integer
+ *                             description: The ID of the task's priority
+ *                           priority_name:
+ *                             type: string
+ *                             description: The name of the task's priority
+ *                       category:
+ *                         type: object
+ *                         properties:
+ *                           category_id:
+ *                             type: integer
+ *                             description: The ID of the task's category
+ *                           category_name:
+ *                             type: string
+ *                             description: The name of the task's category
+ *                 page:
+ *                   type: integer
+ *                   description: The current page number
+ *                   example: 1
+ *                 limit:
+ *                   type: integer
+ *                   description: The number of tasks per page
+ *                   example: 10
+ *                 total:
+ *                   type: integer
+ *                   description: The total number of tasks retrieved
+ *                   example: 2
  *       404:
- *         description: No tasks found.
+ *         description: No tasks found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: No tasks found.
  *       500:
- *         description: Internal server error.
+ *         description: Internal server error
  */
 // Route to fetch all tasks
-router.get('/', authMiddleware, checkRole('admin'), getAllTasks);
+router.get('/', checkRole('admin'), getAllTasks);
 
 
 /**
@@ -164,7 +269,7 @@ router.get('/', authMiddleware, checkRole('admin'), getAllTasks);
  *         description: Internal server error.
  */
 // Route to fetch tasks assigned to the logged-in operator
-router.get('/operator', authMiddleware, checkRole('operator'), getOperatorTasks);
+router.get('/operator', checkRole('operator'), getOperatorTasks);
 
 
 /**
@@ -201,7 +306,7 @@ router.get('/operator', authMiddleware, checkRole('operator'), getOperatorTasks)
  *         description: Internal server error.
  */
 // Route to fetch specific task details
-router.get('/:task_id', authMiddleware, getTaskDetails);
+router.get('/:task_id', getTaskDetails);
 
 
 /**
@@ -273,7 +378,7 @@ router.get('/:task_id', authMiddleware, getTaskDetails);
  *         description: Internal server error.
  */
 // Route to update task details
-router.put('/:task_id', authMiddleware, updateTaskDetails);
+router.put('/:task_id', updateTaskDetails);
 
 
 /**
@@ -324,7 +429,7 @@ router.put('/:task_id', authMiddleware, updateTaskDetails);
  *         description: Internal server error.
  */
 // Route to update task status
-router.patch('/:task_id/status', authMiddleware, updateTaskStatus);
+router.patch('/:task_id/status', updateTaskStatus);
 
 
 /**
@@ -375,7 +480,7 @@ router.patch('/:task_id/status', authMiddleware, updateTaskStatus);
  *         description: Internal server error.
  */
 // Route to reassign a task
-router.patch('/:task_id/assign', authMiddleware, checkRole('admin', 'supervisor'), reassignTask);
+router.patch('/:task_id/assign', checkRole('admin', 'supervisor'), reassignTask);
 
 
 /**
@@ -410,14 +515,14 @@ router.patch('/:task_id/assign', authMiddleware, checkRole('admin', 'supervisor'
  *         description: Internal server error.
  */
 // Route to delete a task
-router.delete('/:task_id', authMiddleware, checkRole('admin'), deleteTask);
+router.delete('/:task_id', checkRole('admin'), deleteTask);
 
 
 /**
  * @swagger
  * /api/tasks/issues:
  *   post:
- *     summary: Report a new issue for a task
+ *     summary: Report a new issue for a task by a logged in user(client mostly)
  *     tags: [Issues]
  *     security:
  *       - bearerAuth: []  # Ensure authentication is required
@@ -431,9 +536,6 @@ router.delete('/:task_id', authMiddleware, checkRole('admin'), deleteTask);
  *               task_id:
  *                 type: integer
  *                 description: The ID of the task the issue relates to.
- *               reported_by:
- *                 type: integer
- *                 description: The ID of the user reporting the issue.
  *               issue_description:
  *                 type: string
  *                 description: A detailed description of the issue.
@@ -465,19 +567,51 @@ router.delete('/:task_id', authMiddleware, checkRole('admin'), deleteTask);
  *         description: Server error.
  */
 // Route to report a new issue
-router.post('/issues', authMiddleware, reportIssue);
+router.post('/issues', reportIssue);
 
 /**
  * @swagger
- * /api/tasks/issues:
+ * /api/issues:
  *   get:
- *     summary: List all reported issues
+ *     summary: Retrieve a list of reported issues with filters, queries, and pagination
  *     tags: [Issues]
- *     security:
- *       - bearerAuth: []  # Ensure authentication is required
+ *     parameters:
+ *       - in: query
+ *         name: task_id
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Filter issues by task ID
+ *       - in: query
+ *         name: reported_by
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Filter issues by reporter's user ID
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [reported, resolved]
+ *         required: false
+ *         description: Filter issues by status
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         required: false
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         required: false
+ *         description: Number of issues per page
  *     responses:
  *       200:
- *         description: Issues fetched successfully.
+ *         description: List of issues retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -489,14 +623,70 @@ router.post('/issues', authMiddleware, reportIssue);
  *                 issues:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Issue'
+ *                     type: object
+ *                     properties:
+ *                       issue_id:
+ *                         type: integer
+ *                         description: The unique ID of the issue
+ *                       task:
+ *                         type: object
+ *                         properties:
+ *                           task_id:
+ *                             type: integer
+ *                             description: The ID of the related task
+ *                           task_name:
+ *                             type: string
+ *                             description: The name of the related task
+ *                           project_id:
+ *                             type: integer
+ *                             description: The ID of the project the task belongs to
+ *                       reportedBy:
+ *                         type: object
+ *                         properties:
+ *                           user_id:
+ *                             type: integer
+ *                             description: The ID of the user who reported the issue
+ *                           first_name:
+ *                             type: string
+ *                             description: The first name of the reporter
+ *                           last_name:
+ *                             type: string
+ *                             description: The last name of the reporter
+ *                       status:
+ *                         type: string
+ *                         description: The status of the issue
+ *                         enum: [reported, resolved]
+ *                       created_at:
+ *                         type: string
+ *                         format: date-time
+ *                         description: When the issue was created
+ *                 page:
+ *                   type: integer
+ *                   description: The current page number
+ *                   example: 1
+ *                 limit:
+ *                   type: integer
+ *                   description: The number of issues per page
+ *                   example: 10
+ *                 total:
+ *                   type: integer
+ *                   description: The total number of issues retrieved
+ *                   example: 2
  *       404:
- *         description: No issues found.
+ *         description: No issues found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: No issues found.
  *       500:
- *         description: Server error.
+ *         description: Internal server error
  */
 // Route to list all reported issues
-router.get('/issues', authMiddleware, listIssues);
+router.get('/issues', listIssues);
 
 
 /**
@@ -535,7 +725,7 @@ router.get('/issues', authMiddleware, listIssues);
  *         description: Server error.
  */
 // Route to retrieve issues for a specific task
-router.get('/issues/:task_id', authMiddleware, getTaskIssues);
+router.get('/issues/:task_id', getTaskIssues);
 
 
 /**
@@ -585,7 +775,7 @@ router.get('/issues/:task_id', authMiddleware, getTaskIssues);
  *         description: Server error.
  */
 // Route to update the status of a task issue
-router.put('/issues/:task_id/status', authMiddleware, updateIssueStatus);
+router.put('/issues/:task_id/status', updateIssueStatus);
 
 
 module.exports = router;

@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware');
 const { createItem, getAllItems, getItemDetails, getProjectInventory, updateItemDetails, deleteItem, } = require('../controllers/inventory.controller');
 const { checkRole } = require('../middleware/roleMiddleware');
 
@@ -50,7 +49,7 @@ const { checkRole } = require('../middleware/roleMiddleware');
  *         description: Server error.
  */
 // Route to create a new item in the main inventory
-router.post('/', authMiddleware, createItem);
+router.post('/', checkRole('admin'), createItem);
 
 
 /**
@@ -82,7 +81,7 @@ router.post('/', authMiddleware, createItem);
  *         description: Server error.
  */
 // Route to get all items in the main inventory
-router.get('/', authMiddleware, getAllItems);
+router.get('/', checkRole('admin'), getAllItems);
 
 
 /**
@@ -119,7 +118,7 @@ router.get('/', authMiddleware, getAllItems);
  *         description: Server error.
  */
 // Route to get details of a specific item in the inventory
-router.get('/:item_id', authMiddleware, getItemDetails);
+router.get('/:item_id', checkRole('admin'), getItemDetails);
 
 
 /**
@@ -167,7 +166,7 @@ router.get('/:item_id', authMiddleware, getItemDetails);
  *         description: Server error.
  */
 // Route to get project-specific inventory items
-router.get('/:project_id/project', authMiddleware, getProjectInventory);
+router.get('/:project_id/project', checkRole('admin', 'supervisor'), getProjectInventory);
 
 
 /**
@@ -222,7 +221,7 @@ router.get('/:project_id/project', authMiddleware, getProjectInventory);
  *         description: Server error.
  */
 // Route to update item details in the inventory
-router.put('/:item_id', authMiddleware, updateItemDetails);
+router.put('/:item_id', checkRole('admin'), updateItemDetails);
 
 
 /**
@@ -257,6 +256,6 @@ router.put('/:item_id', authMiddleware, updateItemDetails);
  *         description: Server error.
  */
 // Route to delete an item from the main inventory
-router.delete('/:item_id', authMiddleware, deleteItem);
+router.delete('/:item_id', checkRole('admin'), deleteItem);
 
 module.exports = router;

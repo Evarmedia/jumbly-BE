@@ -1,4 +1,4 @@
-const { Role, TaskStatus, TaskCategory } = require('../models/models');
+const { Role, TaskStatus, TaskCategory, ProjectStatus } = require('../models/models');
 
 
 const createRole = async (req, res) => {

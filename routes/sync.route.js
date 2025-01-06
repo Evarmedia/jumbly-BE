@@ -40,6 +40,6 @@ const { syncOfflineData } = require('../controllers/sync.controller');
  *       500:
  *         description: Server error.
  */
-router.post('/offline-data', authMiddleware, syncOfflineData);
+router.post('/offline-data', syncOfflineData);
 
 module.exports = router;

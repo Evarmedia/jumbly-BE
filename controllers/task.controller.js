@@ -9,6 +9,8 @@ const {
   TaskCategory,
   Issue,
 } = require("../models/models");
+const { Op } = require("sequelize");
+
 
 const createTask = async (req, res) => {
   try {
@@ -167,8 +169,45 @@ const getProjectTasks = async (req, res) => {
 
 const getAllTasks = async (req, res) => {
   try {
-    // Fetch all tasks with associations
+    const {
+      project_id,
+      status_id,
+      priority_id,
+      category_id,
+      assigned_to,
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    // Build the where clause dynamically
+    const whereClause = {};
+
+    if (project_id) {
+      whereClause.project_id = project_id;
+    }
+
+    if (status_id) {
+      whereClause.status_id = status_id;
+    }
+
+    if (priority_id) {
+      whereClause.priority_id = priority_id;
+    }
+
+    if (category_id) {
+      whereClause.category_id = category_id;
+    }
+
+    if (assigned_to) {
+      whereClause.assigned_to = assigned_to;
+    }
+
+    // Pagination setup
+    const offset = (page - 1) * limit;
+
+    // Fetch tasks with filters, associations, and pagination
     const tasks = await Task.findAll({
+      where: whereClause,
       include: [
         { model: Project, attributes: ["project_id", "project_name"] },
         {
@@ -187,6 +226,8 @@ const getAllTasks = async (req, res) => {
           attributes: ["category_id", "category_name"],
         },
       ],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
     });
 
     if (!tasks.length) {
@@ -196,6 +237,9 @@ const getAllTasks = async (req, res) => {
     res.status(200).json({
       message: "Tasks fetched successfully.",
       tasks,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total: tasks.length,
     });
   } catch (error) {
     console.error("Error fetching tasks:", error);
@@ -610,8 +654,29 @@ const reportIssue = async (req, res) => {
 
 const listIssues = async (req, res) => {
   try {
-    // Fetch all reported issues with associated task and reporter details
+    const { task_id, reported_by, status, page = 1, limit = 10 } = req.query;
+
+    // Build the where clause dynamically
+    const whereClause = {};
+
+    if (task_id) {
+      whereClause.task_id = task_id;
+    }
+
+    if (reported_by) {
+      whereClause.reported_by = reported_by;
+    }
+
+    if (status) {
+      whereClause.status = status;
+    }
+
+    // Pagination setup
+    const offset = (page - 1) * limit;
+
+    // Fetch issues with filters, associations, and pagination
     const issues = await Issue.findAll({
+      where: whereClause,
       include: [
         {
           model: Task,
@@ -624,6 +689,8 @@ const listIssues = async (req, res) => {
         },
       ],
       order: [["created_at", "DESC"]], // Order issues by most recent first
+      limit: parseInt(limit),
+      offset: parseInt(offset),
     });
 
     if (!issues.length) {
@@ -633,6 +700,9 @@ const listIssues = async (req, res) => {
     res.status(200).json({
       message: "Issues fetched successfully.",
       issues,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total: issues.length,
     });
   } catch (error) {
     console.error("Error fetching issues:", error);

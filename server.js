@@ -23,25 +23,29 @@ const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
 const specs = require("./swagger");
 const authMiddleware = require("./middleware/authMiddleware.js");
+const cookieParser = require('cookie-parser');
 
 // Middleware for parsing JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+app.use(cookieParser());
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 // Routes
 app.use("/api/auth", authRoutes); // authentication routes
-app.use("/api/users", userRoutes); // general users management routes
+app.use("/api/users", authMiddleware, userRoutes); // general users management routes
 app.use("/api/projects", authMiddleware, projectRoutes); // projects management routes
-app.use("/api/tasks", taskRoutes); // tasks management routes
-app.use("/api/admin", sysconfigRoutes); // admin/system configuration management routes
-app.use("/api/schedules", scheduleRoutes); // schedules management routes
+app.use("/api/tasks", authMiddleware, taskRoutes); // tasks management routes
+app.use("/api/admin", authMiddleware, sysconfigRoutes); // admin/system configuration management routes
+app.use("/api/schedules", authMiddleware, scheduleRoutes); // schedules management routes
 app.use("/api/reports", reportRoutes); // schedules management routes
-app.use("/api/notifications", notificationRoutes); // Notification routes
+app.use("/api/notifications", authMiddleware, notificationRoutes); // Notification routes
 app.use("/api/sync", syncRoute); // sync route
-app.use("/api/inventory", inventoryRoutes); // sync route
-app.use("/api/transaction", transactionRoutes); // sync route
+app.use("/api/inventory", authMiddleware, inventoryRoutes); // sync route
+app.use("/api/transactions", authMiddleware, transactionRoutes); // sync route
+
+console.log(`App running in ${process.env.NODE_ENV} mode.`);
 
 // Logs
 // GET /api/log: Retrieve logs
@@ -56,7 +60,7 @@ app.get("/api/logs", async (req, res) => {
 });
 
 // inventory logs
-app.get("/api/inventory/logs", async (req, res) => {
+app.get("/api/inventory-logs", async (req, res) => {
   try {
     const [logs] = await sequelize.query(`
       SELECT 

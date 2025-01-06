@@ -1,6 +1,5 @@
 const express = require('express');
 const { profile, updateUserDetails, getAvailableRoles, getAllStaff, getAllClients, deleteUser } = require('../controllers/user.controller.js');
-const authMiddleware = require('../middleware/authMiddleware.js');
 const {checkRole} = require('../middleware/roleMiddleware.js');
 
 const router = express.Router();
@@ -24,7 +23,7 @@ const router = express.Router();
  *               items:
  *                 $ref: '#/components/schemas/User'
  */
-router.get('/profile', authMiddleware, profile)
+router.get('/profile', profile)
 
 
 /**
@@ -49,7 +48,7 @@ router.get('/profile', authMiddleware, profile)
  *       500:
  *         description: Internal server error.
  */
-router.get('/roles', authMiddleware, checkRole('admin'), getAvailableRoles);
+router.get('/roles', checkRole('admin'), getAvailableRoles);
 
 
 /**
@@ -73,7 +72,7 @@ router.get('/roles', authMiddleware, checkRole('admin'), getAvailableRoles);
  *       500:
  *         description: Internal server error
  */
-router.get('/staff', authMiddleware, checkRole('admin'), getAllStaff);
+router.get('/staff', checkRole('admin'), getAllStaff);
 
 
 /**
@@ -91,34 +90,69 @@ router.get('/staff', authMiddleware, checkRole('admin'), getAllStaff);
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Client'
+ *                 $ref: '#/components/schemas/Clients'
  *       401:
  *         description: Unauthorized, if the user does not have the right permissions
  *       500:
  *         description: Internal server error
  */
-router.get('/clients', authMiddleware, checkRole('admin'), getAllClients);
+router.get('/clients', checkRole('admin'), getAllClients);
 
 
 /**
  * @swagger
  * /api/users/{user_id}:
  *   put:
- *     summary: Update user details
+ *     summary: Update user details of a logged-in user
  *     tags: [User]
- *     parameters:
- *       - in: path
- *         name: user_id
- *         schema:
- *           type: integer
- *         required: true
- *         description: The unique ID of the user to update
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/User'  # Reference to the User schema
+ *             type: object
+ *             properties:
+ *               first_name:
+ *                 type: string
+ *                 description: User's first name
+ *               last_name:
+ *                 type: string
+ *                 description: User's last name
+ *               address:
+ *                 type: string
+ *                 description: User's address
+ *               gender:
+ *                 type: string
+ *                 description: User's gender
+ *                 enum: [Male, Female, Other]
+ *               phone:
+ *                 type: string
+ *                 description: User's phone number
+ *               photo:
+ *                 type: string
+ *                 description: URL of the user's photo
+ *               education:
+ *                 type: string
+ *                 description: User's education details
+ *               birthdate:
+ *                 type: string
+ *                 format: date
+ *                 description: User's birthdate in YYYY-MM-DD format
+ *               website:
+ *                 type: string
+ *                 description: User's website (if applicable)
+ *               company_name:
+ *                 type: string
+ *                 description: Name of the user's company
+ *               industry:
+ *                 type: string
+ *                 description: User's industry
+ *               official_email:
+ *                 type: string
+ *                 description: User's official email address
+ *               contact_person:
+ *                 type: string
+ *                 description: User's contact person
  *     responses:
  *       200:
  *         description: User details updated successfully
@@ -131,7 +165,29 @@ router.get('/clients', authMiddleware, checkRole('admin'), getAllClients);
  *                   type: string
  *                   example: User details updated successfully
  *                 user:
- *                   $ref: '#/components/schemas/User'  # Reference to the updated User schema
+ *                   type: object
+ *                   properties:
+ *                     user_id:
+ *                       type: integer
+ *                       description: The unique ID of the user
+ *                     first_name:
+ *                       type: string
+ *                       description: User's first name
+ *                     last_name:
+ *                       type: string
+ *                       description: User's last name
+ *                     address:
+ *                       type: string
+ *                       description: User's address
+ *                     gender:
+ *                       type: string
+ *                       description: User's gender
+ *                     phone:
+ *                       type: string
+ *                       description: User's phone number
+ *                     photo:
+ *                       type: string
+ *                       description: URL of the user's photo
  *       400:
  *         description: Invalid input data
  *       404:
@@ -139,7 +195,8 @@ router.get('/clients', authMiddleware, checkRole('admin'), getAllClients);
  *       500:
  *         description: Internal server error
  */
-router.put('/:user_id', authMiddleware, updateUserDetails);
+
+router.put('/:user_id', updateUserDetails);
 
 
 /**
@@ -161,6 +218,6 @@ router.put('/:user_id', authMiddleware, updateUserDetails);
  *       204:
  *         description: User account deleted
  */
-router.delete('/delete/:user_id', authMiddleware, checkRole('admin'),  deleteUser);
+router.delete('/delete/:user_id', checkRole('admin'),  deleteUser);
 
 module.exports = router;

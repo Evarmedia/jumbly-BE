@@ -53,7 +53,7 @@ const { borrowItem, returnItem, getAllTransactions, getTransactionDetails, } = r
  *         description: Server error.
  */
 // Route to borrow an item from the main inventory to a project's inventory
-router.post('/borrow', authMiddleware, borrowItem);
+router.post('/borrow', checkRole('admin', 'supervisor'), borrowItem);
 
 
 /**
@@ -105,7 +105,7 @@ router.post('/borrow', authMiddleware, borrowItem);
  *         description: Server error.
  */
 // Route to return an item from a project's inventory to the main inventory
-router.post('/return', authMiddleware, returnItem);
+router.post('/return', checkRole('admin', 'supervisor'), returnItem);
 
 
 /**
@@ -137,7 +137,7 @@ router.post('/return', authMiddleware, returnItem);
  *         description: Server error.
  */
 // Route to retrieve all transactions
-router.get('/', authMiddleware, getAllTransactions);
+router.get('/', checkRole('admin',), getAllTransactions);
 
 
 /**
@@ -174,6 +174,6 @@ router.get('/', authMiddleware, getAllTransactions);
  *         description: Server error.
  */
 // Route to retrieve details of a specific transaction
-router.get('/:transaction_id', authMiddleware, getTransactionDetails);
+router.get('/:transaction_id', checkRole('admin',), getTransactionDetails);
 
 module.exports = router;

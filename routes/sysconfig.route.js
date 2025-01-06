@@ -1,6 +1,5 @@
 const express = require('express');
 const { createRole, editRole, getTaskStatuses, createTaskCategory, getTaskCategories, getProjectStatuses } = require('../controllers/sysconfig.controller.js');
-const authMiddleware = require('../middleware/authMiddleware');
 const {checkRole} = require('../middleware/roleMiddleware.js');
 
 const router = express.Router();
@@ -48,7 +47,7 @@ const router = express.Router();
  *         description: Internal server error.
  */
 // Route to create a new role
-router.post('/roles', authMiddleware, checkRole('admin'), createRole);
+router.post('/roles', checkRole('admin'), createRole);
 
 
 /**
@@ -100,7 +99,7 @@ router.post('/roles', authMiddleware, checkRole('admin'), createRole);
  *         description: Internal server error.
  */
 // Route to edit a role
-router.put('/roles/:role_id', authMiddleware, checkRole('admin'), editRole);
+router.put('/roles/:role_id', checkRole('admin'), editRole);
 
 
 /**
@@ -132,7 +131,7 @@ router.put('/roles/:role_id', authMiddleware, checkRole('admin'), editRole);
  *         description: Internal server error.
  */
 // Route to retrieve task statuses
-router.get('/task-statuses', authMiddleware, checkRole('admin'), getTaskStatuses);
+router.get('/task-statuses', checkRole('admin'), getTaskStatuses);
 
 
 /**
@@ -177,7 +176,7 @@ router.get('/task-statuses', authMiddleware, checkRole('admin'), getTaskStatuses
  *         description: Internal server error.
  */
 // Route to create a new task category
-router.post('/task-categories', authMiddleware, checkRole('admin'), createTaskCategory);
+router.post('/task-categories', checkRole('admin'), createTaskCategory);
 
 
 /**
@@ -209,7 +208,7 @@ router.post('/task-categories', authMiddleware, checkRole('admin'), createTaskCa
  *         description: Internal server error.
  */
 // Route to list task categories
-router.get('/task-categories', authMiddleware, checkRole('admin'), getTaskCategories);
+router.get('/task-categories', checkRole('admin'), getTaskCategories);
 
 
 /**
@@ -241,7 +240,7 @@ router.get('/task-categories', authMiddleware, checkRole('admin'), getTaskCatego
  *         description: Internal server error.
  */
 // Route to retrieve project statuses
-router.get('/project-statuses', authMiddleware, checkRole('admin'), getProjectStatuses);
+router.get('/project-statuses', checkRole('admin'), getProjectStatuses);
 
 
 module.exports = router;

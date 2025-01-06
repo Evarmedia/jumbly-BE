@@ -1,7 +1,15 @@
-const { Project, Client, User, Role, UserClient, ProjectStatus } = require("../models/models");
+const {
+  Project,
+  Client,
+  User,
+  Role,
+  UserClient,
+  ProjectStatus,
+} = require("../models/models");
 const reportQueue = require("../queues/reportQueue.js");
 
 const sequelize = require("../config/db");
+const { Op } = require("sequelize");
 
 // create a new project -admin
 const createProjectAdmin = async (req, res) => {
@@ -140,26 +148,76 @@ const createProject = async (req, res) => {
 };
 
 // list all projects in the project table:
+/**
+Fetch all projects:
+GET /api/projects
+
+Fetch projects for a specific client:
+GET /api/projects?client_id=1
+
+Fetch paginated projects:
+GET /api/projects?page=2&limit=5
+
+Fetch projects within a date range:
+GET /api/projects?start_date=2023-01-01&end_date=2023-12-31
+ * 
+*/
 const listAllProjects = async (req, res) => {
   try {
-    // Fetch all projects and include client details
+    const {
+      client_id,
+      status_id,
+      start_date,
+      end_date,
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    const whereClause = {};
+
+    if (client_id) {
+      whereClause.client_id = client_id;
+    }
+
+    if (status_id) {
+      whereClause.status_id = status_id;
+    }
+
+    if (start_date || end_date) {
+      whereClause.start_date = {};
+      if (start_date) {
+        whereClause.start_date[Op.gte] = start_date;
+      }
+      if (end_date) {
+        whereClause.start_date[Op.lte] = end_date;
+      }
+    }
+
+    const offset = (page - 1) * limit; // Calculate the offset
+
     const projects = await Project.findAll({
+      where: whereClause,
       include: {
         model: Client,
-        attributes: ["client_id", "company_name", "contact_person", "email"], // Include client details
+        attributes: ["client_id", "company_name", "contact_person", "email"],
       },
+      limit: parseInt(limit),
+      offset: parseInt(offset),
     });
 
     if (!projects.length) {
       return res.status(404).json({ message: "No projects found." });
     }
 
-    res.status(200).json({ projects });
+    res.status(200).json({
+      projects,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total: projects.length,
+    });
   } catch (error) {
     console.error("Error fetching projects:", error);
-    return res
-      .status(500)
-      .json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 

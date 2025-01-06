@@ -126,7 +126,7 @@ const downloadReport = async (req, res) => {
     // Construct the file path for the report
     const filePath = path.join(
       __dirname,
-      `../reports/project_${project_id}.pdf`
+      `../reports/project_${project_id}_report.pdf`
     );
 
     // Check if the file exists

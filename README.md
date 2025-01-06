@@ -38,6 +38,7 @@ npm install ioredis
 npm install swagger-ui-express swagger-jsdoc
 npm install pdfkit node-cron bull redis
 npm install multer --save  # For file uploads
+npm install cookie-parser
 ```
 
 ### Optional Dependencies (for advanced features)

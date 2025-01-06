@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware');
 const { checkRole } = require('../middleware/roleMiddleware');
 const { createNotificationAdmin, getUserNotifications, updateNotificationStatus } = require('../controllers/notification.controller');
 
@@ -44,7 +43,7 @@ const { createNotificationAdmin, getUserNotifications, updateNotificationStatus 
  *         description: Server error.
  */
 // Route to create a new notification
-router.post('/', authMiddleware, checkRole('admin'), createNotificationAdmin);
+router.post('/', checkRole('admin'), createNotificationAdmin);
 
 
 /**
@@ -90,7 +89,7 @@ router.post('/', authMiddleware, checkRole('admin'), createNotificationAdmin);
  *         description: Server error.
  */
 // Route to fetch user notifications
-router.get('/', authMiddleware, getUserNotifications);
+router.get('/', getUserNotifications);
 
 
 /**
@@ -142,6 +141,6 @@ router.get('/', authMiddleware, getUserNotifications);
  *         description: Server error.
  */
 // Route to update notification status
-router.patch('/:notificationId/status', authMiddleware, updateNotificationStatus);
+router.patch('/:notificationId/status', updateNotificationStatus);
 
 module.exports = router;

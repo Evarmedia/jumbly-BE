@@ -195,7 +195,7 @@ CREATE TABLE AuditLogs (
 --17 Create Items Table
 CREATE TABLE Items (
     item_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
+    name TEXT UNIQUE NOT NULL,
     quantity INTEGER NOT NULL CHECK (quantity >= 0),
     description TEXT
 );
@@ -229,56 +229,56 @@ CREATE TABLE InventoryLog (
     change_type TEXT NOT NULL CHECK (change_type IN ('insert', 'update', 'delete')),
     quantity_change INTEGER NOT NULL,
     change_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (item_id) REFERENCES Items(item_id)
+    FOREIGN KEY (item_id) REFERENCES Items(item_id) ON DELETE CASCADE
 );
 
 -- Trigger: Prevent Borrowing More Items Than Available
-CREATE TRIGGER BeforeBorrow
-BEFORE INSERT ON Transactions
-FOR EACH ROW
-WHEN NEW.action = 'borrow' AND (
-    SELECT quantity FROM Items WHERE item_id = NEW.item_id
-) < NEW.quantity
-BEGIN
-    SELECT RAISE(ABORT, 'Insufficient quantity in main inventory for this borrow request.');
-END;
+-- CREATE TRIGGER BeforeBorrow
+-- BEFORE INSERT ON Transactions
+-- FOR EACH ROW
+-- WHEN NEW.action = 'borrow' AND (
+--     SELECT quantity FROM Items WHERE item_id = NEW.item_id
+-- ) < NEW.quantity
+-- BEGIN
+--     SELECT RAISE(ABORT, 'Insufficient quantity in main inventory for this borrow request.');
+-- END;
 
 -- Update the Items table only if the action is 'borrow'
-CREATE TRIGGER UpdateItemsForBorrow
-AFTER INSERT ON Transactions
-FOR EACH ROW
-WHEN NEW.action = 'borrow'
-BEGIN
-    UPDATE Items
-    SET quantity = quantity - NEW.quantity
-    WHERE item_id = NEW.item_id;
-END;
+-- CREATE TRIGGER UpdateItemsForBorrow
+-- AFTER INSERT ON Transactions
+-- FOR EACH ROW
+-- WHEN NEW.action = 'borrow'
+-- BEGIN
+--     UPDATE Items
+--     SET quantity = quantity - NEW.quantity
+--     WHERE item_id = NEW.item_id;
+-- END;
 
 -- Trigger: Prevent Returning Items Not Borrowed
-CREATE TRIGGER BeforeReturn
-BEFORE INSERT ON Transactions
-FOR EACH ROW
-WHEN NEW.action = 'return' AND (
-    SELECT quantity FROM ProjectInventory WHERE project_id = NEW.project_id AND item_id = NEW.item_id
-) < NEW.quantity
-BEGIN
-    SELECT RAISE(ABORT, 'Cannot return more items than currently borrowed.');
-END;
+-- CREATE TRIGGER BeforeReturn
+-- BEFORE INSERT ON Transactions
+-- FOR EACH ROW
+-- WHEN NEW.action = 'return' AND (
+--     SELECT quantity FROM ProjectInventory WHERE project_id = NEW.project_id AND item_id = NEW.item_id
+-- ) < NEW.quantity
+-- BEGIN
+--     SELECT RAISE(ABORT, 'Cannot return more items than currently borrowed.');
+-- END;
 
 -- Update the ProjectInventory and Items tables only if the action is 'return'
-CREATE TRIGGER UpdateItemsForReturn
-AFTER INSERT ON Transactions
-FOR EACH ROW
-WHEN NEW.action = 'return'
-BEGIN
-    UPDATE ProjectInventory
-    SET quantity = quantity - NEW.quantity
-    WHERE project_id = NEW.project_id AND item_id = NEW.item_id;
+-- CREATE TRIGGER UpdateItemsForReturn
+-- AFTER INSERT ON Transactions
+-- FOR EACH ROW
+-- WHEN NEW.action = 'return'
+-- BEGIN
+--     UPDATE ProjectInventory
+--     SET quantity = quantity - NEW.quantity
+--     WHERE project_id = NEW.project_id AND item_id = NEW.item_id;
 
-    UPDATE Items
-    SET quantity = quantity + NEW.quantity
-    WHERE item_id = NEW.item_id;
-END;
+--     UPDATE Items
+--     SET quantity = quantity + NEW.quantity
+--     WHERE item_id = NEW.item_id;
+-- END;
 
 -- Before delete
 CREATE TRIGGER BeforeDeleteProject
@@ -323,7 +323,7 @@ END;
 
 -- Log deletions
 CREATE TRIGGER LogInventoryDelete
-AFTER DELETE ON Items
+BEFORE DELETE ON Items
 FOR EACH ROW
 BEGIN
     INSERT INTO InventoryLog (item_id, change_type, quantity_change, change_timestamp)

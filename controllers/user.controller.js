@@ -45,8 +45,6 @@ const updateUserDetails = async (req, res) => {
   //   const { user_id } = req.params; // Get user ID from the URL parameters
   const { user_id: user_id } = req.user;
   const {
-    role_id,
-    email,
     first_name,
     last_name,
     address,
@@ -55,7 +53,6 @@ const updateUserDetails = async (req, res) => {
     photo,
     education,
     birthdate,
-    status,
     website,
     company_name,
     industry,
@@ -70,8 +67,6 @@ const updateUserDetails = async (req, res) => {
     }
 
     await user.update({
-      role_id,
-      email,
       first_name,
       last_name,
       address,
@@ -80,14 +75,13 @@ const updateUserDetails = async (req, res) => {
       photo,
       education,
       birthdate,
-      status,
     });
 
     const role = await user.getRole();
 
     if (role.role_name === "client") {
       // Update client details if user is a client
-      const client = await Client.findOne({ where: { email: user.email } });
+      const client = await Client.findOne({ where: { user_id: user.user_id } });
 
       if (client) {
         await client.update({

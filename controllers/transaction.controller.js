@@ -1,4 +1,4 @@
-const { Transaction, ProjectInventory, Item } = require("../models/models");
+const { Transaction, ProjectInventory, Item, Project } = require("../models/models");
 
 /**
  * Borrow an item from the main inventory to a project's inventory.

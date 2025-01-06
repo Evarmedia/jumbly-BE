@@ -1,5 +1,5 @@
 const express = require('express');
-const authMiddleware = require("../middleware/authMiddleware.js"); // Ensure user authentication
+const { checkRole } = require("../middleware/roleMiddleware.js"); // Ensure user authentication
 const { createReport, downloadReport, listReports, getProjectReports, deleteProjectReports, } = require("../controllers/report.controller.js");
 
 const router = express.Router();
@@ -44,7 +44,7 @@ const router = express.Router();
  *       500:
  *         description: Server error.
  */
-router.post('/create', authMiddleware, createReport);
+router.post('/create', createReport);
 
 
 /**

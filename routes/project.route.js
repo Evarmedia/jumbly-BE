@@ -198,7 +198,7 @@ router.get('/', listAllProjects);
  *         description: Internal server error
  */
 // Route to fetch projects for the logged-in client
-router.get("/client", checkRole('client'), getClientProjects);
+router.get("/client", checkRole('client', 'supervisor', 'admin'), getClientProjects);
 
 
 /**

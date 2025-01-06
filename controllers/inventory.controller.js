@@ -1,4 +1,7 @@
 const { Item, ProjectInventory, Project } = require("../models/models");
+const sequelize = require("../config/db");
+
+const { Op } = require("sequelize");
 
 /**
  * Create an item in the main inventory.
@@ -19,6 +22,20 @@ const createItem = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Quantity cannot be zero or negative." });
+    }
+
+    // Check if the item name already exists (case-insensitive)
+    const existingItem = await Item.findOne({
+      where: sequelize.where(
+        sequelize.fn('LOWER', sequelize.col('name')), // Convert name to lowercase
+        name.toLowerCase() // Compare with input name in lowercase
+      ),
+    });
+
+    if (existingItem) {
+      return res.status(400).json({
+        message: `Item with the name "${name}" already exists.`,
+      });
     }
 
     // Create the item
@@ -43,18 +60,47 @@ const createItem = async (req, res) => {
  */
 const getAllItems = async (req, res) => {
   try {
-    // Fetch all items from the database
-    const items = await Item.findAll();
+    const { name, min_quantity, max_quantity, page = 1, limit = 10 } = req.query;
+
+    // Build the where clause dynamically
+    const whereClause = {};
+
+    if (name) {
+      whereClause.name = {
+        [Op.iLike]: `%${name}%`, // Case-insensitive partial match
+      };
+    }
+
+    if (min_quantity || max_quantity) {
+      whereClause.quantity = {};
+      if (min_quantity) {
+        whereClause.quantity[Op.gte] = min_quantity; // Items with quantity >= min_quantity
+      }
+      if (max_quantity) {
+        whereClause.quantity[Op.lte] = max_quantity; // Items with quantity <= max_quantity
+      }
+    }
+
+    // Pagination setup
+    const offset = (page - 1) * limit;
+
+    // Fetch items with filters and pagination
+    const items = await Item.findAll({
+      where: whereClause,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+    });
 
     if (!items.length) {
-      return res
-        .status(404)
-        .json({ message: "No items found in the inventory." });
+      return res.status(404).json({ message: "No items found in the inventory." });
     }
 
     res.status(200).json({
       message: "Items retrieved successfully.",
       items,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total: items.length,
     });
   } catch (error) {
     console.error("Error fetching items:", error.message);

@@ -1,6 +1,5 @@
 const express = require('express');
 const { createSchedule, getAllSchedules, getProjectSchedules, getScheduleDetails, updateScheduleDetails } = require('../controllers/schedule.controller.js');
-const authMiddleware = require('../middleware/authMiddleware');
 const {checkRole} = require('../middleware/roleMiddleware.js');
 
 const router = express.Router();
@@ -60,7 +59,7 @@ const router = express.Router();
  *         description: Internal server error.
  */
 // Route to create a new schedule
-router.post('/', authMiddleware, checkRole('admin', 'supervisor'), createSchedule);
+router.post('/', checkRole('admin', 'supervisor'), createSchedule);
 
 
 /**
@@ -92,7 +91,7 @@ router.post('/', authMiddleware, checkRole('admin', 'supervisor'), createSchedul
  *         description: Internal server error.
  */
 // Route to list all schedules
-router.get('/', authMiddleware, checkRole('admin', 'supervisor'), getAllSchedules);
+router.get('/', checkRole('admin', 'supervisor'), getAllSchedules);
 
 
 /**
@@ -131,7 +130,7 @@ router.get('/', authMiddleware, checkRole('admin', 'supervisor'), getAllSchedule
  *         description: Internal server error.
  */
 // Route to retrieve schedules for a specific project
-router.get('/:project_id', authMiddleware, checkRole('admin', 'supervisor'), getProjectSchedules);
+router.get('/:project_id', checkRole('admin', 'supervisor'), getProjectSchedules);
 
 
 /**
@@ -168,7 +167,7 @@ router.get('/:project_id', authMiddleware, checkRole('admin', 'supervisor'), get
  *         description: Internal server error.
  */
 // Route to retrieve a specific schedule
-router.get('/:schedule_id', authMiddleware, checkRole('admin', 'supervisor'), getScheduleDetails);
+router.get('/:schedule_id', checkRole('admin', 'supervisor'), getScheduleDetails);
 
 
 /**
@@ -226,7 +225,7 @@ router.get('/:schedule_id', authMiddleware, checkRole('admin', 'supervisor'), ge
  *         description: Internal server error.
  */
 // Route to update schedule details
-router.put('/:schedule_id', authMiddleware, checkRole('admin', 'supervisor'), updateScheduleDetails);
+router.put('/:schedule_id', checkRole('admin', 'supervisor'), updateScheduleDetails);
 
 
 module.exports = router;
