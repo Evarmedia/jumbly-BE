@@ -1,5 +1,5 @@
 const express = require('express');
-const { profile, updateUserDetails, getAvailableRoles, getAllStaff, getAllClients, deleteUser } = require('../controllers/user.controller.js');
+const { profile, getUserProfileByAdmin, updateUserDetails, getAvailableRoles, getAllStaff, getAllClients, deleteUser } = require('../controllers/user.controller.js');
 const {checkRole} = require('../middleware/roleMiddleware.js');
 
 const router = express.Router();
@@ -24,6 +24,97 @@ const router = express.Router();
  *                 $ref: '#/components/schemas/User'
  */
 router.get('/profile', profile)
+
+
+/**
+ * @swagger
+ * /api/users/profile/{user_id}:
+ *   get:
+ *     summary: Retrieve a user's profile by an admin -permissions(admin)
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: The unique ID of the user
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: User profile retrieved successfully.
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     user_id:
+ *                       type: integer
+ *                       description: The unique ID of the user
+ *                     first_name:
+ *                       type: string
+ *                       description: User's first name
+ *                     last_name:
+ *                       type: string
+ *                       description: User's last name
+ *                     email:
+ *                       type: string
+ *                       description: User's email address
+ *                     role:
+ *                       type: object
+ *                       properties:
+ *                         role_name:
+ *                           type: string
+ *                           description: The name of the user's role
+ *                         description:
+ *                           type: string
+ *                           description: A brief description of the role
+ *                     client:
+ *                       type: object
+ *                       description: Client details associated with the user
+ *                       properties:
+ *                         client_id:
+ *                           type: integer
+ *                           description: The unique ID of the client
+ *                         company_name:
+ *                           type: string
+ *                           description: Name of the company
+ *                         contact_person:
+ *                           type: string
+ *                           description: Name of the contact person
+ *                     projects:
+ *                       type: array
+ *                       description: Projects associated with the user
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           project_id:
+ *                             type: integer
+ *                             description: The unique ID of the project
+ *                           project_name:
+ *                             type: string
+ *                             description: The name of the project
+ *                           start_date:
+ *                             type: string
+ *                             format: date
+ *                             description: Project start date
+ *                           end_date:
+ *                             type: string
+ *                             format: date
+ *                             description: Project end date
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/profile/:user_id", checkRole("admin"), getUserProfileByAdmin);
 
 
 /**

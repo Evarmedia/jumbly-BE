@@ -35,6 +35,39 @@ const profile = async (req, res) => {
   }
 };
 
+const getUserProfileByAdmin = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    // Fetch the user by ID, including role and associated client/project details
+    const user = await User.findOne({
+      where: { user_id },
+      include: [
+        {
+          model: Role,
+          attributes: ["role_name", "description"], // Role details
+        },
+        {
+          model: Client,
+          attributes: ["client_id", "company_name", "contact_person", "email"], // Client details
+        },
+      ],
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: `User with ID ${user_id} not found.` });
+    }
+
+    res.status(200).json({
+      message: "User profile retrieved successfully.",
+      user,
+    });
+  } catch (error) {
+    console.error("Error fetching user profile:", error.message);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 /** 
  * Update user account details{username, email, phone, company_name, contact_person, status, role_id}
  
@@ -251,8 +284,9 @@ async function deleteUser(req, res) {
 }
 
 module.exports = {
-  updateUserDetails,
   profile,
+  getUserProfileByAdmin,
+  updateUserDetails,
   getAvailableRoles,
   getAllStaff,
   getAllClients,
