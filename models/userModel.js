@@ -18,6 +18,14 @@ User.init(
         key: 'role_id', // Primary key in Roles table
       },
     },
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Tenants',
+        key: 'tenant_id',
+      },
+    },
     email: {
       type: DataTypes.STRING,
       unique: true,
@@ -80,7 +88,45 @@ User.init(
     timestamps: true, // Explicitly managing created_at and updated_at
     createdAt: 'created_at',
     updatedAt: 'updated_at',
+    defaultScope: {
+      attributes: { exclude: ['password'] }, // Exclude password globally by default
+    },
+    scopes: {
+      withPassword: {
+        attributes: {}, // Include all attributes, including password
+      },
+    },
   }
 );
 
-module.exports = User;
+class Tenant extends Model {}
+Tenant.init(
+  {
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    tenant_name: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true,
+    },
+    created_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+  },
+  {
+    sequelize,
+    modelName: 'Tenant',
+    tableName: 'Tenants',
+    timestamps: false, // Use `created_at` and `updated_at` explicitly
+  }
+);
+
+module.exports = { User, Tenant };

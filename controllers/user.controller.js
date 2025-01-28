@@ -35,13 +35,22 @@ const profile = async (req, res) => {
   }
 };
 
+
 const getUserProfileByAdmin = async (req, res) => {
   try {
     const { user_id } = req.params;
 
-    // Fetch the user by ID, including role and associated client/project details
+    // Retrieve tenant_id from the authenticated admin
+    const { tenant_id, role_name } = req.user;
+
+    // Ensure only admins can access this endpoint
+    if (role_name !== "admin") {
+      return res.status(403).json({ message: "Access denied. Only admins can view user profiles." });
+    }
+
+    // Fetch the user by ID and ensure the same tenant_id
     const user = await User.findOne({
-      where: { user_id },
+      where: { user_id, tenant_id }, // Ensure the user belongs to the same tenant
       include: [
         {
           model: Role,
@@ -49,13 +58,14 @@ const getUserProfileByAdmin = async (req, res) => {
         },
         {
           model: Client,
-          attributes: ["client_id", "company_name", "contact_person", "email"], // Client details
+          attributes: ["client_id", "company_name", "contact_person", "official_email"], // Client details
+          through: { attributes: [] }, // Exclude the join table
         },
       ],
     });
 
     if (!user) {
-      return res.status(404).json({ message: `User with ID ${user_id} not found.` });
+      return res.status(404).json({ message: `User with ID ${user_id} not found or not part of your tenant.` });
     }
 
     res.status(200).json({
@@ -67,6 +77,7 @@ const getUserProfileByAdmin = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 /** 
  * Update user account details{username, email, phone, company_name, contact_person, status, role_id}
@@ -166,69 +177,249 @@ const updateUserDetails = async (req, res) => {
 // list of available roles
 const getAvailableRoles = async (req, res) => {
   try {
-    // Fetch all roles from the Roles table
-    const roles = await Role.findAll();
+    // Retrieve the tenant_id from the authenticated user
+    const { tenant_id } = req.user;
+
+    if (!tenant_id) {
+      return res.status(403).json({ message: "Access denied. Tenant ID is required." });
+    }
+
+    // Fetch all roles for the tenant
+    const roles = await Role.findAll({
+      where: { tenant_id }, // Filter roles by tenant_id
+      attributes: ["role_id", "role_name", "description"], // Select only necessary attributes
+    });
 
     // If no roles found, return a message
     if (roles.length === 0) {
-      return res.status(404).json({ message: "No roles found" });
+      return res.status(404).json({ message: "No roles found for this tenant." });
     }
 
-    // Return the list of roles, including role_id and other details
+    // Return the list of roles
     return res.status(200).json(roles);
   } catch (error) {
-    console.error("Error fetching roles:", error);
-    return res.status(500).json({ message: "Server error" });
+    console.error("Error fetching roles:", error.message);
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
 // Function to retrieve all staff members with roles 'operative' and 'supervisor'
 const getAllStaff = async (req, res) => {
   try {
+    const { tenant_id } = req.user; // Retrieve tenant_id from the authenticated user
+
+    if (!tenant_id) {
+      return res.status(403).json({ message: "Access denied. Tenant ID is required." });
+    }
+
+    // Fetch all staff (operators and supervisors) for the tenant
     const staff = await User.findAll({
+      where: { tenant_id }, // Ensure staff belong to the same tenant
       include: [
         {
           model: Role,
           where: {
             role_name: {
-              [Op.in]: ["operator", "supervisor"],
+              [Op.in]: ["operator", "supervisor"], // Include only specified roles
             },
           },
+          attributes: ["role_name", "description"], // Limit attributes returned for roles
         },
       ],
+      attributes: [
+        "user_id",
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "address",
+        "created_at",
+      ], // Select only necessary user attributes
     });
-    res.json(staff);
+
+    if (staff.length === 0) {
+      return res.status(404).json({ message: "No staff found for this tenant." });
+    }
+
+    res.status(200).json(staff);
   } catch (error) {
+    console.error("Error retrieving staff members:", error.message);
     res
       .status(500)
       .send({ message: "Error retrieving staff members: " + error.message });
   }
 };
 
+
 // Function to retrieve all clients
 const getAllClients = async (req, res) => {
   try {
+    const { tenant_id } = req.user; // Retrieve tenant_id from the authenticated user
+
+    if (!tenant_id) {
+      return res.status(403).json({ message: "Access denied. Tenant ID is required." });
+    }
+
+    // Fetch all clients for the tenant
     const clients = await User.findAll({
+      where: { tenant_id }, // Filter users by tenant_id
       include: [
         {
           model: Role,
-          where: {
-            role_name: "client",
-          },
+          where: { role_name: "client" }, // Filter by client role
+          attributes: ["role_name", "description"], // Limit attributes for roles
         },
         {
           model: Client,
-          through: { attributes: [] },
+          attributes: ["client_id", "company_name", "contact_person", "email"], // Client attributes
+          through: { attributes: [] }, // Exclude UserClient attributes
         },
       ],
+      attributes: [
+        "user_id",
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "address",
+        "created_at",
+      ], // Limit user attributes
     });
-    res.json(clients);
+
+    if (clients.length === 0) {
+      return res.status(404).json({ message: "No clients found for this tenant." });
+    }
+
+    res.status(200).json(clients);
   } catch (error) {
+    console.error("Error retrieving clients:", error.message);
     res
       .status(500)
       .send({ message: "Error retrieving clients: " + error.message });
   }
 };
+
+// get all admin, for debuggin purposes
+const getAllAdmins = async (req, res) => {
+  try {
+    // Fetch all users with the "admin" role
+    const admins = await User.findAll({
+      include: [
+        {
+          model: Role,
+          where: { role_name: "admin" }, // Filter by "admin" role
+          attributes: ["role_name", "description"], // Limit attributes for roles
+        },
+      ],
+      attributes: [
+        "user_id",
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "tenant_id",
+        "created_at",
+      ], // Limit user attributes
+    });
+
+    if (admins.length === 0) {
+      return res.status(404).json({ message: "No admins found in the system." });
+    }
+
+    res.status(200).json(admins);
+  } catch (error) {
+    console.error("Error retrieving admins:", error.message);
+    res.status(500).send({ message: "Error retrieving admins: " + error.message });
+  }
+};
+
+
+const getAllUsers = async (req, res) => {
+  try {
+    // Fetch all users from the User table
+    const users = await User.findAll({
+      include: [
+        {
+          model: Role,
+          attributes: ["role_name", "description"], // Include role details
+        },
+      ],
+      attributes: [
+        "user_id",
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "tenant_id",
+        "created_at",
+      ], // Limit user attributes
+    });
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "No users found in the system." });
+    }
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error retrieving users:", error.message);
+    res.status(500).send({ message: "Error retrieving users: " + error.message });
+  }
+};
+
+const adminUpdateUser = async (req, res) => {
+  try {
+    const { user_id } = req.params; // ID of the user to be updated
+    const { tenant_id, role_name } = req.user; // Admin's tenant_id and role
+
+    // Ensure only admins can access this endpoint
+    if (role_name !== "admin") {
+      return res.status(403).json({ message: "Access denied. Only admins can edit user details." });
+    }
+
+    // Check if the user exists and belongs to the same tenant
+    const user = await User.findOne({ where: { user_id, tenant_id } });
+    if (!user) {
+      return res.status(404).json({ message: `User with ID ${user_id} not found in your tenancy.` });
+    }
+
+    // Update the user's details (only fields provided in the request body)
+    const {
+      first_name,
+      last_name,
+      email,
+      phone,
+      address,
+      gender,
+      photo,
+      education,
+      birthdate,
+    } = req.body;
+
+    const updatedUser = await user.update(
+      {
+        first_name,
+        last_name,
+        email,
+        phone,
+        address,
+        gender,
+        photo,
+        education,
+        birthdate,
+      },
+      { fields: ["first_name", "last_name", "email", "phone", "address", "gender", "photo", "education", "birthdate"] } // Only allow these fields to be updated
+    );
+
+    res.status(200).json({
+      message: "User details updated successfully.",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Error updating user details:", error.message);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 
 // Delete User Profile, for now only user and client tables are affected by this action
 async function deleteUser(req, res) {
@@ -287,8 +478,11 @@ module.exports = {
   profile,
   getUserProfileByAdmin,
   updateUserDetails,
+  adminUpdateUser,
   getAvailableRoles,
   getAllStaff,
   getAllClients,
+  getAllAdmins,
+  getAllUsers,
   deleteUser,
 };

@@ -1,5 +1,5 @@
 const express = require('express');
-const { register, login, refreshToken, verifyEmail, forgotPassword, resetPassword } = require('../controllers/auth.controller');
+const { registerTenant, registerUser, login, refreshToken, verifyEmail, forgotPassword, resetPassword } = require('../controllers/auth.controller');
 const {checkRole} = require('../middleware/roleMiddleware.js');
 const authMiddleware = require('../middleware/authMiddleware.js');
 
@@ -7,7 +7,38 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/auth/register:
+ * /api/auth/register/tenant:
+ *   post:
+ *     summary: Register a new Tenant
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: User email
+ *               password:
+ *                 type: string
+ *                 description: User password
+ *               role_name:
+ *                 type: string
+ *                 description: should be "admin"
+ *     responses:
+ *       201:
+ *         description: User registered successfully, check your email for verification
+ *       400:
+ *         description: Bad request
+ *
+ */
+router.post("/register/tenant", registerTenant);
+
+/**
+ * @swagger
+ * /api/auth/register/user:
  *   post:
  *     summary: Register a new user
  *     tags: [Auth]
@@ -24,9 +55,9 @@ const router = express.Router();
  *               password:
  *                 type: string
  *                 description: User password
- *               role_id:
- *                 type: number
- *                 description: User Role ID
+ *               role_name:
+ *                 type: string
+ *                 description: Role name
  *     responses:
  *       201:
  *         description: User registered successfully, check your email for verification
@@ -34,7 +65,8 @@ const router = express.Router();
  *         description: Bad request
  *
  */
-router.post('/register', register);
+router.post("/register/user", authMiddleware, registerUser);
+
 
 /**
  * @swagger

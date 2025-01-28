@@ -18,6 +18,14 @@ Role.init(
     description: {
       type: DataTypes.STRING,
     },
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Tenants",
+        key: "tenant_id",
+      },
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,

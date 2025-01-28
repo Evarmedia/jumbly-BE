@@ -1,6 +1,15 @@
+CREATE TABLE Tenants (
+    tenant_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_name TEXT UNIQUE, --notnull
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+
 -- 1. Users Table
 CREATE TABLE Users (
     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id INTEGER NOT NULL,    -- Foreign key for tenant
     role_id INTEGER NOT NULL,       -- Foreign key for role
     email TEXT UNIQUE NOT NULL,     -- Common to all roles, required
     password TEXT NOT NULL,         -- Common to all roles, required
@@ -18,20 +27,25 @@ CREATE TABLE Users (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (role_id) REFERENCES Roles(role_id)
+    FOREIGN KEY (tenant_id) REFERENCES Tenants(tenant_id)
 );
 
 -- 2. Roles Table - precreate some
 CREATE TABLE Roles (
     role_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    role_name TEXT UNIQUE NOT NULL,
+    role_name TEXT NOT NULL,
     description TEXT,
+    tenant_id INTEGER NOT NULL, -- Tenant-specific roles
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (role_name, tenant_id), -- Ensure role names are unique per tenant
+    FOREIGN KEY (tenant_id) REFERENCES Tenants(tenant_id) ON DELETE CASCADE
 );
 
 -- 3. Clients Table
 CREATE TABLE Clients (
     client_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id INTEGER NOT NULL,    -- Foreign key for tenant
     email TEXT UNIQUE,              -- Inherited from registration endpoint
     website TEXT,                   -- Client-specific
     company_name TEXT,              -- Client-specific
@@ -39,7 +53,8 @@ CREATE TABLE Clients (
     official_email TEXT,            -- Client-specific
     contact_person TEXT,            -- Client-specific
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tenant_id) REFERENCES Tenants(tenant_id)
 );
 
 -- 4. UserClients Table - JOIN Table
@@ -53,6 +68,7 @@ CREATE TABLE UserClients (
 
 -- 5. Projects Table
 CREATE TABLE Projects (
+    tenant_id INTEGER NOT NULL,    -- Foreign key for tenant
     project_id INTEGER PRIMARY KEY AUTOINCREMENT,
     client_id INTEGER NOT NULL,
     project_name TEXT NOT NULL,
@@ -63,6 +79,7 @@ CREATE TABLE Projects (
     description TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tenant_id) REFERENCES Tenants(tenant_id)
     FOREIGN KEY (client_id) REFERENCES Clients(client_id),
     FOREIGN KEY (status_id) REFERENCES ProjectStatuses(status_id),
     FOREIGN KEY (supervisor_id) REFERENCES Users(user_id) -- Supervisor assignment
@@ -168,6 +185,7 @@ CREATE TABLE Issues (
 -- 15. Notifications Table
 CREATE TABLE Notifications (
     notification_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id INTEGER NOT NULL,    -- Foreign key for tenant
     user_id INTEGER NOT NULL,           -- The recipient of the notification
     message TEXT NOT NULL,              -- Notification content
     type TEXT,                          -- Notification type (e.g., 'task', 'system')
@@ -176,6 +194,7 @@ CREATE TABLE Notifications (
     delivered_at DATETIME DEFAULT CURRENT_TIMESTAMP,              -- Timestamp for when the notification was delivered
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tenant_id) REFERENCES Tenants(tenant_id),
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
 
@@ -195,17 +214,21 @@ CREATE TABLE AuditLogs (
 --17 Create Items Table
 CREATE TABLE Items (
     item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id INTEGER NOT NULL,    -- Foreign key for tenant
     name TEXT UNIQUE NOT NULL,
     quantity INTEGER NOT NULL CHECK (quantity >= 0),
-    description TEXT
+    description TEXT,
+    FOREIGN KEY (tenant_id) REFERENCES Tenants(tenant_id)
 );
 
 --18 Create ProjectInventory Table
 CREATE TABLE ProjectInventory (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id INTEGER NOT NULL,    -- Foreign key for tenant
     project_id INTEGER NOT NULL,
     item_id INTEGER NOT NULL,
     quantity INTEGER NOT NULL CHECK (quantity >= 0),
+    FOREIGN KEY (tenant_id) REFERENCES Tenants(tenant_id),
     FOREIGN KEY (project_id) REFERENCES Projects(project_id) ON DELETE CASCADE,
     FOREIGN KEY (item_id) REFERENCES Items(item_id) ON DELETE CASCADE
 );
@@ -231,54 +254,6 @@ CREATE TABLE InventoryLog (
     change_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (item_id) REFERENCES Items(item_id) ON DELETE CASCADE
 );
-
--- Trigger: Prevent Borrowing More Items Than Available
--- CREATE TRIGGER BeforeBorrow
--- BEFORE INSERT ON Transactions
--- FOR EACH ROW
--- WHEN NEW.action = 'borrow' AND (
---     SELECT quantity FROM Items WHERE item_id = NEW.item_id
--- ) < NEW.quantity
--- BEGIN
---     SELECT RAISE(ABORT, 'Insufficient quantity in main inventory for this borrow request.');
--- END;
-
--- Update the Items table only if the action is 'borrow'
--- CREATE TRIGGER UpdateItemsForBorrow
--- AFTER INSERT ON Transactions
--- FOR EACH ROW
--- WHEN NEW.action = 'borrow'
--- BEGIN
---     UPDATE Items
---     SET quantity = quantity - NEW.quantity
---     WHERE item_id = NEW.item_id;
--- END;
-
--- Trigger: Prevent Returning Items Not Borrowed
--- CREATE TRIGGER BeforeReturn
--- BEFORE INSERT ON Transactions
--- FOR EACH ROW
--- WHEN NEW.action = 'return' AND (
---     SELECT quantity FROM ProjectInventory WHERE project_id = NEW.project_id AND item_id = NEW.item_id
--- ) < NEW.quantity
--- BEGIN
---     SELECT RAISE(ABORT, 'Cannot return more items than currently borrowed.');
--- END;
-
--- Update the ProjectInventory and Items tables only if the action is 'return'
--- CREATE TRIGGER UpdateItemsForReturn
--- AFTER INSERT ON Transactions
--- FOR EACH ROW
--- WHEN NEW.action = 'return'
--- BEGIN
---     UPDATE ProjectInventory
---     SET quantity = quantity - NEW.quantity
---     WHERE project_id = NEW.project_id AND item_id = NEW.item_id;
-
---     UPDATE Items
---     SET quantity = quantity + NEW.quantity
---     WHERE item_id = NEW.item_id;
--- END;
 
 -- Before delete
 CREATE TRIGGER BeforeDeleteProject
@@ -392,17 +367,17 @@ CREATE INDEX idx_auditlogs_action ON AuditLogs(action);
 
 
 -- Pre Inserting roles into the Roles table
-INSERT INTO Roles (role_name, description)
-VALUES ('admin', 'Administrator role with full access to the system.');
+-- INSERT INTO Roles (role_name, description)
+-- VALUES ('admin', 'Administrator role with full access to the system.');
 
-INSERT INTO Roles (role_name, description)
-VALUES ('client', 'Client role with limited access to view data.');
+-- INSERT INTO Roles (role_name, description)
+-- VALUES ('client', 'Client role with limited access to view data.');
 
-INSERT INTO Roles (role_name, description)
-VALUES ('supervisor', 'Supervisor role with permissions to oversee operations and manage users.');
+-- INSERT INTO Roles (role_name, description)
+-- VALUES ('supervisor', 'Supervisor role with permissions to oversee operations and manage users.');
 
-INSERT INTO Roles (role_name, description)
-VALUES ('operator', 'Operator role with permissions to manage operations.');
+-- INSERT INTO Roles (role_name, description)
+-- VALUES ('operator', 'Operator role with permissions to manage operations.');
 
 -- Pre Inserting project status
 INSERT INTO ProjectStatuses (status_name, description)

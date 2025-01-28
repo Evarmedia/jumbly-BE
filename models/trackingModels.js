@@ -121,6 +121,14 @@ Notification.init(
         key: 'user_id',
       },
     },
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Tenants",
+        key: "tenant_id",
+      },
+    },
     message: {
       type: DataTypes.TEXT,
       allowNull: false,

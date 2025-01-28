@@ -11,6 +11,14 @@ const Project = sequelize.define('Project', {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
+    tenant_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: "Tenants",
+          key: "tenant_id",
+        },
+      },
     project_name: {
         type: DataTypes.STRING,
         allowNull: false,

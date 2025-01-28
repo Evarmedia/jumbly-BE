@@ -13,14 +13,6 @@ const authMiddleware = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, config.jwtSecret); // Verify the token
     req.user = decoded.user; // Attach user details to the request
-
-    // Dynamically set the @current_user_id in the database session
-    // if (req.user && req.user.user_id) {
-    //   await sequelize.query(`SET @current_user_id = ${req.user.user_id}`);
-    //   console.log("Updated userID to logger Triggers");
-    // }
-    // NOT SUPPORTED NATIVELY BY SQLITE
-    // console.log("Decoded token payload:", decoded);
     // console.log("Request user:", req.user);
 
     next(); // Proceed to the next middleware or route

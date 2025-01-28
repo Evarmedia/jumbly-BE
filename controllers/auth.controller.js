@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const config = require("../config/jwt");
-const { User, Role, UserClient, Client } = require("../models/models.js");
+const { User, Tenant, Role, UserClient, Client } = require("../models/models.js");
 const crypto = require("crypto");
 const {
   sendVerificationEmail,
@@ -12,10 +12,116 @@ const sequelize = require("../config/db");
 
 const redis = require("../utils/redis.js");
 
-const register = async (req, res) => {
+const registerTenant = async (req, res) => {
   try {
     const {
-      role_id,
+      role_name, // Should always be "admin"
+      email,
+      password,
+      first_name,
+      last_name,
+      address,
+      gender,
+      phone,
+      photo,
+      company_name,
+    } = req.body;
+
+    if (role_name !== "admin") {
+      return res.status(400).json({ message: "New tenant creation requires an admin role." });
+    }
+
+    // Validate required fields
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email, password are required." });
+    }
+
+    const transaction = await sequelize.transaction();
+
+    try {
+      // Create the tenant
+      const newTenant = await Tenant.create(
+        {
+          tenant_name: company_name,
+        },
+        { transaction }
+      );
+
+      // Insert default roles for the new tenant
+      const defaultRoles = [
+        { role_name: "admin", description: "Administrator role with full access to the system." },
+        { role_name: "client", description: "Client role with limited access to view data." },
+        { role_name: "supervisor", description: "Supervisor role with permissions to oversee operations and manage users." },
+        { role_name: "operator", description: "Operator role with permissions to manage operations." },
+      ];
+
+      for (const role of defaultRoles) {
+        await Role.create(
+          {
+            role_name: role.role_name,
+            description: role.description,
+            tenant_id: newTenant.tenant_id,
+          },
+          { transaction }
+        );
+      }
+
+      // Fetch the admin role for the tenant
+      const adminRole = await Role.findOne({
+        where: { role_name: "admin", tenant_id: newTenant.tenant_id },
+        transaction,
+      });
+
+      if (!adminRole) {
+        throw new Error("Failed to create admin role for the new tenant.");
+      }
+
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create the admin user
+      const newAdmin = await User.create(
+        {
+          email,
+          password: hashedPassword,
+          role_id: adminRole.role_id,
+          first_name,
+          last_name,
+          address,
+          gender,
+          phone,
+          photo,
+          tenant_id: newTenant.tenant_id,
+        },
+        { transaction }
+      );
+
+      // Commit the transaction
+      await transaction.commit();
+
+      return res.status(201).json({
+        message: "Tenant registered successfully.",
+        user: {
+          tenant_id: newTenant.tenant_id,
+          tenant_name: newTenant.tenant_name,
+          user_id: newAdmin.user_id,
+          email: newAdmin.email,
+        },
+      });
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
+  } catch (error) {
+    console.error("Tenant Registration Error:", error.message);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+const registerUser = async (req, res) => {
+  try {
+    const {
+      role_name, // Role to assign to the new user
       email,
       password,
       first_name,
@@ -26,7 +132,6 @@ const register = async (req, res) => {
       photo,
       education,
       birthdate,
-      status,
       website,
       company_name,
       industry,
@@ -34,51 +139,73 @@ const register = async (req, res) => {
       contact_person,
     } = req.body;
 
-    // Check if the user already exists
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ message: "Email is already in use" });
+    // Validate the authenticated user's role
+    if (req.user.role_name !== "admin") {
+      return res.status(403).json({ message: "Only admins can register new users." });
     }
 
-    // Check if the role exists
-    const role = await Role.findByPk(role_id);
-    if (!role) {
-      return res.status(400).json({ message: "Invalid role ID" });
+    const tenant_id = req.user.tenant_id;
+
+    // Validate required fields
+    if (!email || !password || !role_name) {
+      return res.status(400).json({ message: "Email, password, and role name are required." });
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Start a transaction for atomicity
     const transaction = await sequelize.transaction();
+
     try {
+      // Resolve role_id from role_name
+      const role = await Role.findOne({
+        where: { role_name, tenant_id },
+      });
+
+      if (!role) {
+        return res.status(400).json({ message: `Invalid role name: ${role_name}` });
+      }
+
+      // Check if the user already exists
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ message: "Email is already in use." });
+      }
+
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
       // Create the user
       const newUser = await User.create(
         {
           email,
           password: hashedPassword,
-          role_id,
+          role_id: role.role_id,
+          first_name,
+          last_name,
+          address,
+          gender,
           phone,
+          photo,
+          education,
+          birthdate,
+          tenant_id,
         },
         { transaction }
       );
 
-      // If the user is a client, create a client record and associate it with the user
-      if (role.role_name === "client") {
-        // Create a client record
+      // Create client-specific record if the role_name is "client"
+      if (role_name === "client") {
         const newClient = await Client.create(
           {
             email,
             website,
             company_name,
             industry,
-            official_email,
+            official_email: official_email || email,
             contact_person,
+            tenant_id,
           },
           { transaction }
         );
 
-        // Create the many-to-many relationship in UserClients
         await UserClient.create(
           {
             user_id: newUser.user_id,
@@ -91,40 +218,22 @@ const register = async (req, res) => {
       // Commit the transaction
       await transaction.commit();
 
-      // Generate a verification code
-      // const verificationCode = crypto.randomBytes(3).toString('hex');
-
-      // Store the code in Redis with an expiration time (10 minutes)
-      // redis
-      //   .setex(`verification_code_${email}`, 600, verificationCode)
-      //   .catch((err) =>
-      //     console.error("Failed to store verification code in Redis:", err)
-      //   );
-
-      // Send the verification email
-      // sendVerificationEmail(email, verificationCode).catch((err) =>
-      //   console.error("Failed to send verification email:", err)
-      // );
-
       return res.status(201).json({
-        message:
-          "User registered successfully. Check your email for verification.",
+        message: "User registered successfully.",
         user: {
           user_id: newUser.user_id,
           email: newUser.email,
-          role_id: newUser.role_id,
+          role_name,
+          tenant_id,
         },
       });
     } catch (err) {
-      // Rollback transaction if anything goes wrong
       await transaction.rollback();
       throw err;
     }
   } catch (error) {
-    console.error(error);
-    return res
-      .status(500)
-      .json({ message: "Server error", error: error.message });
+    console.error("User Registration Error:", error.message);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -133,8 +242,26 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check if the user exists
-    const user = await User.findOne({ where: { email }, include: Role });
+    // Validate request body
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required." });
+    }
+    
+    // Fetch the user with password included
+    const user = await User.scope("withPassword").findOne({
+      where: { email },
+      include: [
+        {
+          model: Role,
+          attributes: ["role_id", "role_name"],
+        },
+        {
+          model: Tenant,
+          attributes: ["tenant_id", "tenant_name"],
+        },
+      ],
+    });
+
     if (!user) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
@@ -152,6 +279,8 @@ const login = async (req, res) => {
         email: user.email,
         role_id: user.Role.role_id,
         role_name: user.Role.role_name,
+        tenant_id: user.tenant_id,
+        tenant_name: user.Tenant?.tenant_name,
       },
     };
 
@@ -169,22 +298,25 @@ const login = async (req, res) => {
 
     // Set the refresh token in an HttpOnly cookie
     res.cookie("refresh_token", refresh_token, {
-      httpOnly: true, // Prevent access by JavaScript
-      secure: process.env.NODE_ENV === "production", // Use secure cookies in production
-      sameSite: "None", // Enable cross-origin requests
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "None",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
+    // Respond with the access token and user details
     res.status(200).json({
       message: "Login successful",
-      token, // Short-lived access token
-      refresh_token, // temporarily added in development for testing
+      token,
+      refresh_token, // Temporarily added for testing in development
       user: {
         user_id: user.user_id,
         first_name: user.first_name,
         email: user.email,
         role_id: user.Role.role_id,
         role_name: user.Role.role_name,
+        tenant_id: user.tenant_id,
+        tenant_name: user.Tenant?.tenant_name,
       },
     });
   } catch (error) {
@@ -192,6 +324,8 @@ const login = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+
 
 // referesh-token
 const refreshToken = async (req, res) => {
@@ -360,7 +494,8 @@ const resetPassword = async (req, res) => {
 };
 
 module.exports = {
-  register,
+  registerTenant,
+  registerUser,
   login,
   refreshToken,
   verifyEmail,

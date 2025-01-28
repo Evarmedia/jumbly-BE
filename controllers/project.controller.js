@@ -11,10 +11,11 @@ const reportQueue = require("../queues/reportQueue.js");
 const sequelize = require("../config/db");
 const { Op } = require("sequelize");
 
-// create a new project -admin
+// create a new project -admin creates a project and asigns it to a client
 const createProjectAdmin = async (req, res) => {
   try {
     const user_id = req.user.user_id; // Get the authenticated user's ID
+    const tenant_id = req.user.tenant_id; // Get the authenticated user's tenant ID
     const {
       project_name,
       start_date,
@@ -26,7 +27,7 @@ const createProjectAdmin = async (req, res) => {
 
     // Check if the authenticated user is an admin
     const adminUser = await User.findOne({
-      where: { user_id },
+      where: { user_id, tenant_id }, // Ensure the admin belongs to the same tenant
       include: {
         model: Role,
         attributes: ["role_name"],
@@ -40,12 +41,15 @@ const createProjectAdmin = async (req, res) => {
       });
     }
 
-    // Verify that the client exists
-    const client = await Client.findByPk(client_id);
+    // Verify that the client exists and belongs to the same tenant
+    const client = await Client.findOne({
+      where: { client_id, tenant_id }, // Ensure the client belongs to the same tenant
+    });
+
     if (!client) {
       return res
         .status(404)
-        .json({ message: `Client with ID ${client_id} not found.` });
+        .json({ message: `Client with ID ${client_id} not found in your tenancy.` });
     }
 
     // Create the project and associate it with the client
@@ -56,6 +60,7 @@ const createProjectAdmin = async (req, res) => {
       end_date,
       status_id,
       description,
+      tenant_id, // Ensure the project is linked to the same tenant
     });
 
     // Insert into AuditLogs
@@ -66,9 +71,9 @@ const createProjectAdmin = async (req, res) => {
         replacements: [
           "Projects",
           "INSERT",
-          client_id,
+          newProject.project_id,
           user_id,
-          `Admin Created a project with name "${project_name}" for client with ID ${client_id}`,
+          `Admin created a project with name "${project_name}" for client with ID ${client_id}`,
         ],
       }
     );
@@ -78,12 +83,13 @@ const createProjectAdmin = async (req, res) => {
       project: newProject,
     });
   } catch (error) {
-    console.error("Error creating project:", error);
+    console.error("Error creating project:", error.message);
     return res
       .status(500)
       .json({ message: "Server error", error: error.message });
   }
 };
+
 
 // create a new project -client
 const createProject = async (req, res) => {

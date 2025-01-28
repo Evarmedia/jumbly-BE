@@ -72,7 +72,7 @@ router.post("/admin", checkRole('admin'), createProjectAdmin);
  * @swagger
  * /api/projects:
  *   post:
- *     summary: Create a new project
+ *     summary: Create a new project - permissions(clients)
  *     description: Allows an authenticated client to create a new project.
  *     tags: [Projects]
  *     requestBody:
@@ -416,7 +416,7 @@ router.patch('/:project_id/status', updateProjectStatus);
  *       500:
  *         description: Internal server error.
  */
-// Route for assigning a supervisor to a project
+// Route for assigning a supervisor to a project //Only Admin
 router.patch('/:project_id/assign', assignProjectSupervisor);
 
 

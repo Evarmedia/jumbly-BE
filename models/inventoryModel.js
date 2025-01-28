@@ -9,6 +9,14 @@ Item.init(
       primaryKey: true,
       autoIncrement: true,
     },
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Tenants",
+        key: "tenant_id",
+      },
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -55,6 +63,14 @@ ProjectInventory.init(
       references: {
         model: 'Items',
         key: 'item_id',
+      },
+    },
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Tenants",
+        key: "tenant_id",
       },
     },
     quantity: {
