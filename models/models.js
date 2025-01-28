@@ -1,4 +1,4 @@
-const User = require("./userModel");
+const {User, Tenant} = require("./userModel");
 const Role = require("./roleModel");
 const Client = require("./clientModel");
 const UserClient = require("./userClientsModel");
@@ -42,6 +42,17 @@ Client.belongsToMany(User, {
 // Define relationships between Project and Task
 Project.hasMany(Task, { foreignKey: "project_id", onDelete: "CASCADE" }); // Delete tasks if project is deleted
 Task.belongsTo(Project, { foreignKey: "project_id" });
+
+// Define the relationship between User and Project for supervisor_id
+User.hasMany(Project, {
+  foreignKey: "supervisor_id", // Foreign key in the Project table
+  as: "SupervisedProjects", // Alias for projects supervised by the user
+});
+
+Project.belongsTo(User, {
+  foreignKey: "supervisor_id", // Foreign key in the Project table
+  as: "Supervisor", // Alias for the supervisor relationship
+});
 
 // Define relationships between Task and User (assignments)
 User.hasMany(Task, { foreignKey: "assigned_by" }); // User who assigns the task
@@ -103,8 +114,34 @@ Transaction.belongsTo(Item, { foreignKey: "item_id" });
 Project.hasMany(Transaction, { foreignKey: "project_id", onDelete: "CASCADE" });
 Transaction.belongsTo(Project, { foreignKey: "project_id" });
 
+// Tenants and Users
+Tenant.hasMany(User, { foreignKey: "tenant_id", onDelete: "CASCADE" });
+User.belongsTo(Tenant, { foreignKey: "tenant_id" });
+
+// Tenants and Clients
+Tenant.hasMany(Client, { foreignKey: "tenant_id", onDelete: "CASCADE" });
+Client.belongsTo(Tenant, { foreignKey: "tenant_id" });
+
+// Tenants and Projects
+Tenant.hasMany(Project, { foreignKey: "tenant_id", onDelete: "CASCADE" });
+Project.belongsTo(Tenant, { foreignKey: "tenant_id" });
+
+// Tenants and Roles
+Tenant.hasMany(Role, { foreignKey: "tenant_id", onDelete: "CASCADE" });
+Role.belongsTo(Tenant, { foreignKey: "tenant_id" });
+
+// Tenants and Notifications
+Tenant.hasMany(Notification, { foreignKey: "tenant_id", onDelete: "CASCADE" });
+Notification.belongsTo(Tenant, { foreignKey: "tenant_id" });
+
+// Tenants and Transactions (Optional if inventory is tenant-specific)
+Tenant.hasMany(Transaction, { foreignKey: "tenant_id", onDelete: "CASCADE" });
+Transaction.belongsTo(Tenant, { foreignKey: "tenant_id" });
+
+
 module.exports = {
   User,
+  Tenant,
   Role,
   Client,
   UserClient,
