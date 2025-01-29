@@ -305,10 +305,13 @@ router.get("/", authMiddleware, getAllUsers);
 
 /**
  * @swagger
- * /api/users/{user_id}:
+ * /api/users/profile:
  *   put:
- *     summary: Update user details of a logged-in user
+ *     summary: Update logged-in user's details
+ *     description: Allows the logged-in user to update their personal details. If the user is a client, additional client-specific details can be updated.
  *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -344,19 +347,19 @@ router.get("/", authMiddleware, getAllUsers);
  *                 description: User's birthdate in YYYY-MM-DD format
  *               website:
  *                 type: string
- *                 description: User's website (if applicable)
+ *                 description: Client's website (clients only)
  *               company_name:
  *                 type: string
- *                 description: Name of the user's company
+ *                 description: Client's company name (clients only)
  *               industry:
  *                 type: string
- *                 description: User's industry
+ *                 description: Client's industry (clients only)
  *               official_email:
  *                 type: string
- *                 description: User's official email address
+ *                 description: Client's official email address (clients only)
  *               contact_person:
  *                 type: string
- *                 description: User's contact person
+ *                 description: Client's contact person (clients only)
  *     responses:
  *       200:
  *         description: User details updated successfully
@@ -392,6 +395,32 @@ router.get("/", authMiddleware, getAllUsers);
  *                     photo:
  *                       type: string
  *                       description: URL of the user's photo
+ *                     education:
+ *                       type: string
+ *                       description: User's education details
+ *                     birthdate:
+ *                       type: string
+ *                       format: date
+ *                       description: User's birthdate
+ *                     client_details:
+ *                       type: object
+ *                       description: Client-specific details (if the user is a client)
+ *                       properties:
+ *                         website:
+ *                           type: string
+ *                           description: Client's website
+ *                         company_name:
+ *                           type: string
+ *                           description: Client's company name
+ *                         industry:
+ *                           type: string
+ *                           description: Client's industry
+ *                         official_email:
+ *                           type: string
+ *                           description: Client's official email address
+ *                         contact_person:
+ *                           type: string
+ *                           description: Client's contact person
  *       400:
  *         description: Invalid input data
  *       404:
@@ -399,7 +428,7 @@ router.get("/", authMiddleware, getAllUsers);
  *       500:
  *         description: Internal server error
  */
-router.put('/:user_id', authMiddleware, updateUserDetails);
+router.put('/profile', authMiddleware, updateUserDetails);
 
 
 /**

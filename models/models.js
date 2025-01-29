@@ -1,4 +1,4 @@
-const {User, Tenant} = require("./userModel");
+const {User, Tenant, TenantRole, } = require("./userModel");
 const Role = require("./roleModel");
 const Client = require("./clientModel");
 const UserClient = require("./userClientsModel");
@@ -138,10 +138,19 @@ Notification.belongsTo(Tenant, { foreignKey: "tenant_id" });
 Tenant.hasMany(Transaction, { foreignKey: "tenant_id", onDelete: "CASCADE" });
 Transaction.belongsTo(Tenant, { foreignKey: "tenant_id" });
 
+// Define many-to-many relationship for tenants and roles
+Tenant.belongsToMany(Role, { through: TenantRole, foreignKey: "tenant_id" });
+Role.belongsToMany(Tenant, { through: TenantRole, foreignKey: "role_id" });
+
+// Define relationships for users
+User.belongsTo(Tenant, { foreignKey: "tenant_id" });
+User.belongsTo(Role, { foreignKey: "role_id" });
+
 
 module.exports = {
   User,
   Tenant,
+  TenantRole,
   Role,
   Client,
   UserClient,

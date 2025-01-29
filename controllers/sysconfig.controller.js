@@ -1,6 +1,7 @@
 const {
   Role,
   User,
+  TenantRole,
   TaskStatus,
   TaskCategory,
   ProjectStatus,
@@ -9,12 +10,7 @@ const {
 const createRole = async (req, res) => {
   try {
     const { role_name, description } = req.body;
-    const { tenant_id, user_id } = req.user; // Extract tenant_id and user_id from authenticated user
-
-    // Validate input
-    if (!role_name) {
-      return res.status(400).json({ message: "role_name is required." });
-    }
+    const { tenant_id, user_id } = req.user; // Extract authenticated user's details
 
     // Ensure only admins can create roles
     const user = await User.findOne({
@@ -31,33 +27,37 @@ const createRole = async (req, res) => {
       });
     }
 
-    // Convert role_name to lowercase for consistent comparison
+    // Convert role_name to lowercase for case-insensitive comparison
     const normalizedRoleName = role_name.toLowerCase();
 
-    // Check if the role already exists (case-insensitive)
-    const existingRole = await Role.findOne({
+    // Check if the role already exists globally (case-insensitive)
+    let existingRole = await Role.findOne({
       where: sequelize.where(
         sequelize.fn("LOWER", sequelize.col("role_name")),
         normalizedRoleName
       ),
     });
 
-    if (existingRole) {
-      return res
-        .status(400)
-        .json({ message: "Role already exists in this tenant." });
+    // If the role doesn't exist, create it
+    if (!existingRole) {
+      existingRole = await Role.create({ role_name: normalizedRoleName, description });
     }
 
-    // Create the role within the tenant
-    const newRole = await Role.create({
-      role_name: normalizedRoleName,
-      description,
-      tenant_id,
+    // Check if the role is already assigned to this tenant
+    const tenantHasRole = await TenantRole.findOne({
+      where: { tenant_id, role_id: existingRole.role_id },
     });
 
+    if (tenantHasRole) {
+      return res.status(400).json({ message: "Role already exists for this tenant." });
+    }
+
+    // Assign the role to the tenant in TenantRoles
+    await TenantRole.create({ tenant_id, role_id: existingRole.role_id });
+
     res.status(201).json({
-      message: "Role created successfully.",
-      role: newRole,
+      message: "Role created and assigned to tenant successfully.",
+      role: existingRole,
     });
   } catch (error) {
     console.error("Error creating role:", error);

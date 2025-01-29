@@ -18,6 +18,8 @@ const sequelize = require("../config/db");
 
 const redis = require("../utils/redis.js");
 
+const { TenantRole } = require("../models/models.js");
+
 const registerTenant = async (req, res) => {
   try {
     const {
@@ -33,7 +35,7 @@ const registerTenant = async (req, res) => {
       company_name,
     } = req.body;
 
-    if (role_name !== "admin") {
+    if (role_name.toLowerCase() !== "admin") {
       return res
         .status(400)
         .json({ message: "New tenant creation requires an admin role." });
@@ -41,13 +43,13 @@ const registerTenant = async (req, res) => {
 
     // Validate required fields
     if (!email || !password) {
-      return res.status(400).json({ message: "Email, password are required." });
+      return res.status(400).json({ message: "Email and password are required." });
     }
 
     const transaction = await sequelize.transaction();
 
     try {
-      // Create the tenant
+      // Create the new tenant
       const newTenant = await Tenant.create(
         {
           tenant_name: company_name,
@@ -55,46 +57,34 @@ const registerTenant = async (req, res) => {
         { transaction }
       );
 
-      // Insert default roles for the new tenant
-      const defaultRoles = [
-        {
-          role_name: "admin",
-          description: "Administrator role with full access to the system.",
-        },
-        {
-          role_name: "client",
-          description: "Client role with limited access to view data.",
-        },
-        {
-          role_name: "supervisor",
-          description:
-            "Supervisor role with permissions to oversee operations and manage users.",
-        },
-        {
-          role_name: "operator",
-          description: "Operator role with permissions to manage operations.",
-        },
-      ];
+      // Default roles to assign to the new tenant
+      const defaultRoleNames = ["admin", "client", "supervisor", "operator"];
 
-      for (const role of defaultRoles) {
-        await Role.create(
-          {
-            role_name: role.role_name,
-            description: role.description,
-            tenant_id: newTenant.tenant_id,
-          },
-          { transaction }
-        );
-      }
-
-      // Fetch the admin role for the tenant
-      const adminRole = await Role.findOne({
-        where: { role_name: "admin", tenant_id: newTenant.tenant_id },
+      // Find role IDs for default roles
+      const roles = await Role.findAll({
+        where: { role_name: defaultRoleNames },
+        attributes: ["role_id", "role_name"],
         transaction,
       });
 
+      if (roles.length !== defaultRoleNames.length) {
+        throw new Error("Some default roles are missing in the system.");
+      }
+
+      // Assign default roles to the new tenant in TenantRoles
+      await TenantRole.bulkCreate(
+        roles.map((role) => ({
+          tenant_id: newTenant.tenant_id,
+          role_id: role.role_id,
+        })),
+        { transaction }
+      );
+
+      // Find the "admin" role_id for the new admin user
+      const adminRole = roles.find((role) => role.role_name === "admin");
+
       if (!adminRole) {
-        throw new Error("Failed to create admin role for the new tenant.");
+        throw new Error("Admin role missing in the system.");
       }
 
       // Hash the password
@@ -127,6 +117,7 @@ const registerTenant = async (req, res) => {
           tenant_name: newTenant.tenant_name,
           user_id: newAdmin.user_id,
           email: newAdmin.email,
+          role_name: "admin",
         },
       });
     } catch (err) {
@@ -138,6 +129,7 @@ const registerTenant = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 const registerUser = async (req, res) => {
   try {
@@ -160,34 +152,40 @@ const registerUser = async (req, res) => {
       contact_person,
     } = req.body;
 
-    // Validate the authenticated user's role
+    // Validate that only admins can register new users
     if (req.user.role_name !== "admin") {
-      return res
-        .status(403)
-        .json({ message: "Only admins can register new users." });
+      return res.status(403).json({ message: "Only admins can register new users." });
     }
 
     const tenant_id = req.user.tenant_id;
 
     // Validate required fields
     if (!email || !password || !role_name) {
-      return res
-        .status(400)
-        .json({ message: "Email, password, and role name are required." });
+      return res.status(400).json({ message: "Email, password, and role name are required." });
     }
 
     const transaction = await sequelize.transaction();
 
     try {
-      // Resolve role_id from role_name
+      // Find the role ID from the global Roles table
       const role = await Role.findOne({
-        where: { role_name, tenant_id },
+        where: { role_name: role_name.toLowerCase() }, // Case-insensitive check
+        attributes: ["role_id", "role_name"],
+        transaction,
       });
 
       if (!role) {
-        return res
-          .status(400)
-          .json({ message: `Invalid role name: ${role_name}` });
+        return res.status(400).json({ message: `Invalid role name: ${role_name}. Please create it first.` });
+      }
+
+      // Ensure that the tenant has access to the role
+      const tenantRole = await TenantRole.findOne({
+        where: { tenant_id, role_id: role.role_id },
+        transaction,
+      });
+
+      if (!tenantRole) {
+        return res.status(403).json({ message: `Role '${role_name}' is not assigned to this tenant. Please add it first.` });
       }
 
       // Check if the user already exists
@@ -219,7 +217,7 @@ const registerUser = async (req, res) => {
       );
 
       // Create client-specific record if the role_name is "client"
-      if (role_name === "client") {
+      if (role.role_name === "client") {
         const newClient = await Client.create(
           {
             email,
@@ -250,7 +248,7 @@ const registerUser = async (req, res) => {
         user: {
           user_id: newUser.user_id,
           email: newUser.email,
-          role_name,
+          role_name: role.role_name,
           tenant_id,
         },
       });
@@ -264,6 +262,7 @@ const registerUser = async (req, res) => {
   }
 };
 
+
 // Log in a user
 const login = async (req, res) => {
   try {
@@ -271,9 +270,7 @@ const login = async (req, res) => {
 
     // Validate request body
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required." });
+      return res.status(400).json({ message: "Email and password are required." });
     }
 
     // Fetch the user with password included
@@ -299,6 +296,15 @@ const login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid email or password" });
+    }
+
+    // Verify that the user's role is assigned to their tenant
+    const tenantRole = await TenantRole.findOne({
+      where: { tenant_id: user.tenant_id, role_id: user.Role.role_id },
+    });
+
+    if (!tenantRole) {
+      return res.status(403).json({ message: "Your role is no longer assigned to this tenant. Contact an admin." });
     }
 
     // Payload for access token

@@ -7,6 +7,7 @@ const {
   ProjectInventory,
   Item,
   Tenant,
+  TenantRole,
 } = require("../models/models.js");
 const { Op } = require("sequelize");
 
@@ -96,14 +97,10 @@ const getUserProfileByAdmin = async (req, res) => {
 };
 
 /** 
- * Update user account details{username, email, phone, company_name, contact_person, status, role_id}
- 
- * admin will be able to update roles via role_id
- * other users will be able to update their details
+ * Update user account details{username, email, phone, company_name, contact_person, status}
  * **/
 const updateUserDetails = async (req, res) => {
-  //   const { user_id } = req.params; // Get user ID from the URL parameters
-  const { user_id: user_id } = req.user;
+  const { user_id, tenant_id } = req.user; // Authenticated user details
   const {
     first_name,
     last_name,
@@ -118,14 +115,23 @@ const updateUserDetails = async (req, res) => {
     industry,
     official_email,
     contact_person,
-  } = req.body; // Get new details from request body
+  } = req.body; // User's new details
 
   try {
-    const user = await User.findByPk(user_id);
+    // Find the logged-in user with role information
+    const user = await User.findOne({
+      where: { user_id },
+      include: {
+        model: Role,
+        attributes: ["role_name"],
+      },
+    });
+
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "User not found." });
     }
 
+    // Update the user's personal details
     await user.update({
       first_name,
       last_name,
@@ -137,11 +143,9 @@ const updateUserDetails = async (req, res) => {
       birthdate,
     });
 
-    const role = await user.getRole();
-
-    if (role.role_name === "client") {
-      // Update client details if user is a client
-      const client = await Client.findOne({ where: { user_id: user.user_id } });
+    // If the user is a client, update their client-specific details
+    if (user.Role.role_name === "client") {
+      let client = await Client.findOne({ where: { tenant_id } });
 
       if (client) {
         await client.update({
@@ -152,7 +156,6 @@ const updateUserDetails = async (req, res) => {
           contact_person,
         });
       } else {
-        // If no client record exists, create a new one
         await Client.create({
           email: user.email,
           website,
@@ -160,70 +163,73 @@ const updateUserDetails = async (req, res) => {
           industry,
           official_email,
           contact_person,
+          tenant_id,
         });
       }
     }
 
-    const updatedUser = await User.findByPk(user_id, {
-      include: [
-        {
-          model: Role,
-          attributes: ["role_name"],
-        },
-        {
-          model: Client,
-          attributes: [
-            "website",
-            "company_name",
-            "industry",
-            "official_email",
-            "contact_person",
-          ],
-        },
+    // Fetch the updated user details
+    const updatedUser = await User.findOne({
+      where: { user_id },
+      attributes: [
+        "user_id",
+        "first_name",
+        "last_name",
+        "address",
+        "gender",
+        "phone",
+        "photo",
+        "education",
+        "birthdate",
       ],
+      include: {
+        model: Client,
+        attributes: ["website", "company_name", "industry", "official_email", "contact_person"],
+        through: { attributes: [] },
+      },
     });
 
-    return res.status(200).json(updatedUser);
+    return res.status(200).json({
+      message: "User details updated successfully.",
+      user: updatedUser,
+    });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Server error" });
+    console.error("Error updating user details:", error.message);
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 // list of available roles
 const getAvailableRoles = async (req, res) => {
   try {
-    // Retrieve the tenant_id from the authenticated user
-    const { tenant_id } = req.user;
+    const { tenant_id } = req.user; // Get authenticated user's tenant_id
 
-    if (!tenant_id) {
-      return res
-        .status(403)
-        .json({ message: "Access denied. Tenant ID is required." });
-    }
-
-    // Fetch all roles for the tenant
+    // Fetch roles available to the tenant from TenantRoles
     const roles = await Role.findAll({
-      where: { tenant_id }, // Filter roles by tenant_id
-      attributes: ["role_id", "role_name", "description"], // Select only necessary attributes
+      include: [
+        {
+          model: TenantRole,
+          where: { tenant_id },
+          attributes: [], // We only need role details, no extra fields from TenantRoles
+        },
+      ],
     });
 
-    // If no roles found, return a message
-    if (roles.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No roles found for this tenant." });
+    if (!roles.length) {
+      return res.status(404).json({ message: "No roles found for this tenant." });
     }
 
-    // Return the list of roles
-    return res.status(200).json(roles);
+    res.status(200).json({
+      message: "Roles retrieved successfully.",
+      roles,
+    });
   } catch (error) {
-    console.error("Error fetching roles:", error.message);
-    return res
-      .status(500)
-      .json({ message: "Server error", error: error.message });
+    console.error("Error fetching roles:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 // Function to retrieve all staff members with roles 'operative' and 'supervisor'
 const getAllStaff = async (req, res) => {
@@ -421,7 +427,14 @@ const adminUpdateUser = async (req, res) => {
     }
 
     // Check if the user exists and belongs to the same tenant
-    const user = await User.findOne({ where: { user_id, tenant_id } });
+    const user = await User.findOne({
+      where: { user_id, tenant_id },
+      include: {
+        model: Role,
+        attributes: ["role_name"],
+      },
+    });
+
     if (!user) {
       return res.status(404).json({
         message: `User with ID ${user_id} not found in your tenancy.`,
@@ -439,36 +452,75 @@ const adminUpdateUser = async (req, res) => {
       photo,
       education,
       birthdate,
+      website,
+      company_name,
+      industry,
+      official_email,
+      contact_person,
     } = req.body;
 
-    const updatedUser = await user.update(
-      {
-        first_name,
-        last_name,
-        email,
-        phone,
-        address,
-        gender,
-        photo,
-        education,
-        birthdate,
-      },
-      {
-        fields: [
-          "first_name",
-          "last_name",
-          "email",
-          "phone",
-          "address",
-          "gender",
-          "photo",
-          "education",
-          "birthdate",
-        ],
-      } // Only allow these fields to be updated
-    );
+    await user.update({
+      first_name,
+      last_name,
+      email,
+      phone,
+      address,
+      gender,
+      photo,
+      education,
+      birthdate,
+    });
 
-    res.status(200).json({
+    // If the user is a client, update client-specific details
+    if (user.Role.role_name === "client") {
+      let client = await Client.findOne({ where: { tenant_id } });
+
+      if (client) {
+        await client.update({
+          website,
+          company_name,
+          industry,
+          official_email,
+          contact_person,
+        });
+      } else {
+        await Client.create({
+          email: user.email,
+          website,
+          company_name,
+          industry,
+          official_email,
+          contact_person,
+          tenant_id,
+        });
+      }
+    }
+
+    // Fetch the updated user details **excluding UserClient**
+    const updatedUser = await User.findOne({
+      where: { user_id },
+      attributes: [
+        "user_id",
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "address",
+        "gender",
+        "photo",
+        "education",
+        "birthdate",
+      ],
+      include: [
+        {
+          model: Client,
+          attributes: ["website", "company_name", "industry", "official_email", "contact_person"],
+          through: { attributes: [] }, // 🚀 Exclude UserClient join table details
+        },
+      ],
+    });
+
+    return res.status(200).json({
       message: "User details updated successfully.",
       user: updatedUser,
     });

@@ -52,6 +52,14 @@ const createProjectAdmin = async (req, res) => {
       });
     }
 
+    // Ensure the provided status_id exists in the global ProjectStatuses table
+    const projectStatus = await ProjectStatus.findByPk(status_id);
+    if (!projectStatus) {
+      return res.status(400).json({
+        message: `Invalid status_id: ${status_id}. Please use a valid project status.`,
+      });
+    }
+
     // Ensure no duplicate project name within the client
     const existingProject = await Project.findOne({
       where: {

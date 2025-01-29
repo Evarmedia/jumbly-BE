@@ -1,3 +1,5 @@
+.headers on
+
 CREATE TABLE Tenants (
     tenant_id INTEGER PRIMARY KEY AUTOINCREMENT,
     tenant_name TEXT UNIQUE, --notnull
@@ -5,6 +7,16 @@ CREATE TABLE Tenants (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Create the new `TenantRoles` table
+CREATE TABLE TenantRoles (
+    tenant_role_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id INTEGER NOT NULL,
+    role_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tenant_id) REFERENCES Tenants(tenant_id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES Roles(role_id) ON DELETE CASCADE
+);
 
 -- 1. Users Table
 CREATE TABLE Users (
@@ -35,11 +47,8 @@ CREATE TABLE Roles (
     role_id INTEGER PRIMARY KEY AUTOINCREMENT,
     role_name TEXT NOT NULL,
     description TEXT,
-    tenant_id INTEGER NOT NULL, -- Tenant-specific roles
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (role_name, tenant_id), -- Ensure role names are unique per tenant
-    FOREIGN KEY (tenant_id) REFERENCES Tenants(tenant_id) ON DELETE CASCADE
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 3. Clients Table
@@ -366,18 +375,18 @@ CREATE INDEX idx_auditlogs_table_name ON AuditLogs(table_name);
 CREATE INDEX idx_auditlogs_action ON AuditLogs(action);
 
 
--- Pre Inserting roles into the Roles table
--- INSERT INTO Roles (role_name, description)
--- VALUES ('admin', 'Administrator role with full access to the system.');
+Pre Inserting roles into the Roles table
+INSERT INTO Roles (role_name, description)
+VALUES ('admin', 'Administrator role with full access to the system.');
 
--- INSERT INTO Roles (role_name, description)
--- VALUES ('client', 'Client role with limited access to view data.');
+INSERT INTO Roles (role_name, description)
+VALUES ('client', 'Client role with limited access to view data.');
 
--- INSERT INTO Roles (role_name, description)
--- VALUES ('supervisor', 'Supervisor role with permissions to oversee operations and manage users.');
+INSERT INTO Roles (role_name, description)
+VALUES ('supervisor', 'Supervisor role with permissions to oversee operations and manage users.');
 
--- INSERT INTO Roles (role_name, description)
--- VALUES ('operator', 'Operator role with permissions to manage operations.');
+INSERT INTO Roles (role_name, description)
+VALUES ('operator', 'Operator role with permissions to manage operations.');
 
 -- Pre Inserting project status
 INSERT INTO ProjectStatuses (status_name, description)

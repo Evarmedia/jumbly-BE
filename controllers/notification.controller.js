@@ -1,5 +1,5 @@
 const { createNotification } = require("../utils/notification");
-const { User, Notification } = require("../models/models");
+const { User, Notification, Role } = require("../models/models");
 
 /**
  * Create a new notification for a user.
@@ -7,21 +7,29 @@ const { User, Notification } = require("../models/models");
 const createNotificationAdmin = async (req, res) => {
   try {
     const { user_id, message, type, priority } = req.body;
-    const { tenant_id } = req.user; // Get the tenant ID of the authenticated admin
+    const { tenant_id, user_id: admin_id } = req.user; // Get the admin's user_id and tenant_id
 
     // Validate required fields
     if (!user_id || !message) {
-      return res
-        .status(400)
-        .json({ message: "user_id and message are required." });
+      return res.status(400).json({ message: "user_id and message are required." });
     }
 
-    // Check if the user exists and belongs to the same tenant
-    const user = await User.findOne({
-      where: {
-        user_id,
-        tenant_id, // Ensure the user belongs to the same tenant
+    // Ensure the authenticated user is an admin
+    const adminUser = await User.findOne({
+      where: { user_id: admin_id, tenant_id },
+      include: {
+        model: Role,
+        attributes: ["role_name"],
       },
+    });
+
+    if (!adminUser || adminUser.Role.role_name !== "admin") {
+      return res.status(403).json({ message: "Only admins can send notifications." });
+    }
+
+    // Check if the target user exists and belongs to the same tenant
+    const user = await User.findOne({
+      where: { user_id, tenant_id },
     });
 
     if (!user) {
@@ -36,7 +44,7 @@ const createNotificationAdmin = async (req, res) => {
       message,
       type || "system",
       priority || "medium",
-      tenant_id // Pass tenant_id to the notification function
+      tenant_id // Pass tenant_id to ensure tenant-based filtering
     );
 
     res.status(201).json({
@@ -47,6 +55,7 @@ const createNotificationAdmin = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 /**
  * Fetch notifications for the authenticated user.

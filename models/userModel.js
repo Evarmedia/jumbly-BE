@@ -2,7 +2,6 @@ const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/db'); // Sequelize instance
 
 class User extends Model {}
-
 User.init(
   {
     user_id: {
@@ -129,4 +128,47 @@ Tenant.init(
   }
 );
 
-module.exports = { User, Tenant };
+class TenantRole extends Model {}
+TenantRole.init(
+  {
+    tenant_role_id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Tenants",
+        key: "tenant_id",
+      },
+    },
+    role_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Roles",
+        key: "role_id",
+      },
+    },
+    created_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+  },
+  {
+    sequelize,
+    modelName: "TenantRole",
+    tableName: "TenantRoles",
+    timestamps: true,
+    createdAt: "created_at",
+    updatedAt: "updated_at",
+  }
+);
+
+module.exports = { User, Tenant, TenantRole };
