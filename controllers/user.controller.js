@@ -15,11 +15,23 @@ const { Op } = require("sequelize");
 const profile = async (req, res) => {
   try {
     // Extract user ID from request (this comes from the auth middleware)
-    const { user_id: userId } = req.user; // Make sure `user_id` matches the field name in your User model
+    const { user_id: userId } = req.user; // Ensure `user_id` matches the field name in your User model
 
     // Fetch user details along with associated role and client info
     const userProfile = await User.findOne({
       where: { user_id: userId }, // Match with the `user_id` field in the Users table
+      attributes: [
+        "user_id",
+        "first_name",
+        "last_name",
+        "address",
+        "gender",
+        "phone",
+        "photo",
+        "education",
+        "birthdate",
+        "organisation_name",
+      ],
       include: [
         {
           model: Role,
@@ -27,8 +39,19 @@ const profile = async (req, res) => {
         },
         {
           model: Client,
-          through: { attributes: [] }, // Assuming many-to-many relationship via UserClients table
-          // attributes: ["company_name", "contact_person"], // excluded so all columns are returned
+          attributes: [
+            "client_id",
+            "tenant_id",
+            "email",
+            "website",
+            "company_name",
+            "industry",
+            "official_email",
+            "contact_person",
+            "created_at",
+            "updated_at",
+          ],
+          through: { attributes: [] }, // Exclude UserClient join table details
         },
       ],
     });
@@ -38,12 +61,27 @@ const profile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    return res.status(200).json(userProfile); // Return user profile with associated role and client data
+    // Convert userProfile to JSON so we can modify the response
+    const responseUser = userProfile.toJSON();
+
+    // If the user has client data, add the extra fields (`first_name`, `last_name`, `phone`, `photo`) to Clients object
+    if (responseUser.Clients && responseUser.Clients.length > 0) {
+      responseUser.Clients = responseUser.Clients.map((client) => ({
+        ...client,
+        first_name: responseUser.first_name,
+        last_name: responseUser.last_name,
+        phone: responseUser.phone,
+        photo: responseUser.photo,
+      }));
+    }
+
+    return res.status(200).json(responseUser);
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Server error" });
+    console.error("Error fetching profile:", error.message);
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 const getUserProfileByAdmin = async (req, res) => {
   try {
@@ -198,7 +236,6 @@ const updateUserDetails = async (req, res) => {
     return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 
 
 // list of available roles
@@ -424,7 +461,7 @@ const adminUpdateUser = async (req, res) => {
     if (role_name !== "admin") {
       return res
         .status(403)
-        .json({ message: "Access denied. Only admins can edit user details." });
+        .json({ message: "Access denied. Only admins can edit user details like this." });
     }
 
     // Check if the user exists and belongs to the same tenant
@@ -453,6 +490,7 @@ const adminUpdateUser = async (req, res) => {
       photo,
       education,
       birthdate,
+      organisation_name,
       website,
       company_name,
       industry,
@@ -470,11 +508,12 @@ const adminUpdateUser = async (req, res) => {
       photo,
       education,
       birthdate,
+      organisation_name,
     });
 
     // If the user is a client, update client-specific details
     if (user.Role.role_name === "client") {
-      let client = await Client.findOne({ where: { tenant_id } });
+      let client = await Client.findOne({ where: { email: user.email, tenant_id } });
 
       if (client) {
         await client.update({
@@ -511,18 +550,43 @@ const adminUpdateUser = async (req, res) => {
         "photo",
         "education",
         "birthdate",
+        "organisation_name",
       ],
       include: [
         {
           model: Client,
-          through: { attributes: [] },
+          attributes: [
+            "client_id",
+            "tenant_id",
+            "email",
+            "website",
+            "company_name",
+            "industry",
+            "official_email",
+            "contact_person",
+            "created_at",
+            "updated_at",
+          ],
+          through: { attributes: [] }, // Exclude UserClient join table details
         },
       ],
     });
 
+    // Modify response to include user fields inside the Clients array
+    const responseUser = updatedUser.toJSON();
+    if (responseUser.Clients && responseUser.Clients.length > 0) {
+      responseUser.Clients = responseUser.Clients.map((client) => ({
+        ...client,
+        first_name: responseUser.first_name,
+        last_name: responseUser.last_name,
+        phone: responseUser.phone,
+        photo: responseUser.photo,
+      }));
+    }
+
     return res.status(200).json({
       message: "User details updated successfully.",
-      user: updatedUser,
+      user: responseUser,
     });
   } catch (error) {
     console.error("Error updating user details:", error.message);

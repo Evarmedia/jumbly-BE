@@ -345,6 +345,9 @@ router.get("/", authMiddleware, getAllUsers);
  *                 type: string
  *                 format: date
  *                 description: User's birthdate in YYYY-MM-DD format
+ *               organisation_name:
+ *                 type: string
+ *                 description: User's Organisation
  *               website:
  *                 type: string
  *                 description: Client's website (clients only)
@@ -482,6 +485,9 @@ router.put('/profile', authMiddleware, updateUserDetails);
  *                 type: string
  *                 format: date
  *                 description: The user's date of birth.
+ *               organisation_name:
+ *                 type: string
+ *                 description: User's Organisation
  *               website:
  *                 type: string
  *                 description: Client's website (if applicable).
@@ -529,6 +535,9 @@ router.put('/profile', authMiddleware, updateUserDetails);
  *                     address:
  *                       type: string
  *                       description: The user's updated address.
+ *                     organisation_name:
+ *                       type: string
+ *                       description: User's Organisation.
  *                     client_details:
  *                       type: object
  *                       description: Client-specific details (if the user is a client).

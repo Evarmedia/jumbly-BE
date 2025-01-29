@@ -78,6 +78,11 @@ const options = {
               description:
                 "The birthdate of the user (Supervisor and Operator-specific).",
             },
+            organisation_name: {
+              type: "string",
+              description:
+                "The Organisation name of an Admin.",
+            },
             status: {
               type: "string",
               enum: ["verified", "unverified"],
