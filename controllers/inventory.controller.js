@@ -141,11 +141,9 @@ const getItemDetails = async (req, res) => {
     });
 
     if (!item) {
-      return res
-        .status(404)
-        .json({
-          message: `Item with ID ${item_id} not found in your tenancy.`,
-        });
+      return res.status(404).json({
+        message: `Item with ID ${item_id} not found in your tenancy.`,
+      });
     }
 
     res.status(200).json({
@@ -174,7 +172,9 @@ const getProjectInventory = async (req, res) => {
     if (!project) {
       return res
         .status(404)
-        .json({ message: `Project with ID ${project_id} not found in your tenancy.` });
+        .json({
+          message: `Project with ID ${project_id} not found in your tenancy.`,
+        });
     }
 
     // Fetch items associated with the project
@@ -203,7 +203,6 @@ const getProjectInventory = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 
 /**
  * Update details of an item in the inventory.
@@ -263,7 +262,9 @@ const deleteItem = async (req, res) => {
     if (!item) {
       return res
         .status(404)
-        .json({ message: `Item with ID ${item_id} not found in your tenancy.` });
+        .json({
+          message: `Item with ID ${item_id} not found in your tenancy.`,
+        });
     }
 
     // Delete the item

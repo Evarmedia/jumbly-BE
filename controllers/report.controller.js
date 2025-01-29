@@ -16,38 +16,57 @@ const createReport = async (req, res) => {
         {
           model: Task,
           include: [
-            { model: TaskStatus, as: 'status', attributes: ['status_name'] },
-            { model: TaskPriority, as: 'priority', attributes: ['priority_name'] },
-            { model: TaskCategory, as: 'category', attributes: ['category_name'] },
+            { model: TaskStatus, as: "status", attributes: ["status_name"] },
+            {
+              model: TaskPriority,
+              as: "priority",
+              attributes: ["priority_name"],
+            },
+            {
+              model: TaskCategory,
+              as: "category",
+              attributes: ["category_name"],
+            },
           ],
         },
         {
           model: Schedule,
           include: [
-            { model: User, as: 'Supervisor', attributes: ['first_name', 'last_name'] },
+            {
+              model: User,
+              as: "Supervisor",
+              attributes: ["first_name", "last_name"],
+            },
           ],
         },
         {
           model: ProjectStatus,
-          as: 'status',
-          attributes: ['status_name'],
+          as: "status",
+          attributes: ["status_name"],
         },
       ],
     });
 
     if (!project) {
-      return res.status(404).json({ message: `Project with ID ${project_id} not found.` });
+      return res
+        .status(404)
+        .json({ message: `Project with ID ${project_id} not found.` });
     }
 
     // Generate the report file
     const doc = new PDFDocument();
-    const reportPath = path.join(__dirname, `../reports/project_${project_id}_report.pdf`);
+    const reportPath = path.join(
+      __dirname,
+      `../reports/project_${project_id}_report.pdf`
+    );
     const writeStream = fs.createWriteStream(reportPath);
 
     doc.pipe(writeStream);
 
     // Add project details to the PDF
-    doc.fontSize(20).text(`Project Report: ${project.project_name}`, { underline: true });
+    doc
+      .fontSize(20)
+      .text(`Project Report: ${project.project_name}`, { underline: true });
     doc.fontSize(16).text(`Project Name: ${project.project_name}`);
     doc.text(`Project ID: ${project.project_id}`);
     doc.text(`Description: ${project.description}`);
@@ -57,28 +76,34 @@ const createReport = async (req, res) => {
 
     // Add tasks
     doc.moveDown();
-    doc.fontSize(18).text('Tasks:');
+    doc.fontSize(18).text("Tasks:");
     if (project.Tasks.length > 0) {
       project.Tasks.forEach((task, index) => {
         doc.text(
-          `${index + 1}. ${task.task_name} - Status: ${task.status.status_name}, Priority: ${task.priority.priority_name}, Category: ${task.category.category_name}`
+          `${index + 1}. ${task.task_name} - Status: ${
+            task.status.status_name
+          }, Priority: ${task.priority.priority_name}, Category: ${
+            task.category.category_name
+          }`
         );
       });
     } else {
-      doc.text(': No task created for this project');
+      doc.text(": No task created for this project");
     }
 
     // Add schedules
     doc.moveDown();
-    doc.fontSize(18).text('Schedules:');
+    doc.fontSize(18).text("Schedules:");
     if (project.Schedules.length > 0) {
       project.Schedules.forEach((schedule, index) => {
         doc.text(
-          `${index + 1}. ${schedule.schedule_date} - Supervisor: ${schedule.Supervisor.first_name} ${schedule.Supervisor.last_name}`
+          `${index + 1}. ${schedule.schedule_date} - Supervisor: ${
+            schedule.Supervisor.first_name
+          } ${schedule.Supervisor.last_name}`
         );
       });
     } else {
-      doc.text(': No schedule found for this project');
+      doc.text(": No schedule found for this project");
     }
 
     // Finalize the PDF
@@ -86,8 +111,8 @@ const createReport = async (req, res) => {
 
     // Wait for the file to finish writing
     await new Promise((resolve, reject) => {
-      writeStream.on('finish', resolve);
-      writeStream.on('error', reject);
+      writeStream.on("finish", resolve);
+      writeStream.on("error", reject);
     });
 
     console.log(`Report generated: ${reportPath}`);
@@ -101,15 +126,14 @@ const createReport = async (req, res) => {
     });
 
     res.status(201).json({
-      message: 'Report generated successfully.',
+      message: "Report generated successfully.",
       report_url: `/api/reports/download/${project_id}`,
     });
   } catch (error) {
-    console.error('Error generating report:', error.message);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error("Error generating report:", error.message);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 
 const downloadReport = async (req, res) => {
   try {
@@ -206,11 +230,9 @@ const getProjectReports = async (req, res) => {
     });
 
     if (!reports.length) {
-      return res
-        .status(404)
-        .json({
-          message: `No reports found for project with ID ${project_id}.`,
-        });
+      return res.status(404).json({
+        message: `No reports found for project with ID ${project_id}.`,
+      });
     }
 
     res.status(200).json({
@@ -234,7 +256,11 @@ const deleteProjectReports = async (req, res) => {
     const reports = await Report.findAll({ where: { project_id } });
 
     if (!reports.length) {
-      return res.status(404).json({ message: `No reports found for project with ID ${project_id}.` });
+      return res
+        .status(404)
+        .json({
+          message: `No reports found for project with ID ${project_id}.`,
+        });
     }
 
     // Delete report files from the file system
@@ -251,13 +277,16 @@ const deleteProjectReports = async (req, res) => {
     // Delete reports from the database
     await Report.destroy({ where: { project_id } });
 
-    res.status(200).json({ message: `Reports for project ID ${project_id} deleted successfully.` });
+    res
+      .status(200)
+      .json({
+        message: `Reports for project ID ${project_id} deleted successfully.`,
+      });
   } catch (error) {
-    console.error('Error deleting project reports:', error.message);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error("Error deleting project reports:", error.message);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 
 module.exports = {
   createReport,

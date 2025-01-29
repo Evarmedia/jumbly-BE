@@ -1,7 +1,13 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const config = require("../config/jwt");
-const { User, Tenant, Role, UserClient, Client } = require("../models/models.js");
+const {
+  User,
+  Tenant,
+  Role,
+  UserClient,
+  Client,
+} = require("../models/models.js");
 const crypto = require("crypto");
 const {
   sendVerificationEmail,
@@ -28,7 +34,9 @@ const registerTenant = async (req, res) => {
     } = req.body;
 
     if (role_name !== "admin") {
-      return res.status(400).json({ message: "New tenant creation requires an admin role." });
+      return res
+        .status(400)
+        .json({ message: "New tenant creation requires an admin role." });
     }
 
     // Validate required fields
@@ -49,10 +57,23 @@ const registerTenant = async (req, res) => {
 
       // Insert default roles for the new tenant
       const defaultRoles = [
-        { role_name: "admin", description: "Administrator role with full access to the system." },
-        { role_name: "client", description: "Client role with limited access to view data." },
-        { role_name: "supervisor", description: "Supervisor role with permissions to oversee operations and manage users." },
-        { role_name: "operator", description: "Operator role with permissions to manage operations." },
+        {
+          role_name: "admin",
+          description: "Administrator role with full access to the system.",
+        },
+        {
+          role_name: "client",
+          description: "Client role with limited access to view data.",
+        },
+        {
+          role_name: "supervisor",
+          description:
+            "Supervisor role with permissions to oversee operations and manage users.",
+        },
+        {
+          role_name: "operator",
+          description: "Operator role with permissions to manage operations.",
+        },
       ];
 
       for (const role of defaultRoles) {
@@ -141,14 +162,18 @@ const registerUser = async (req, res) => {
 
     // Validate the authenticated user's role
     if (req.user.role_name !== "admin") {
-      return res.status(403).json({ message: "Only admins can register new users." });
+      return res
+        .status(403)
+        .json({ message: "Only admins can register new users." });
     }
 
     const tenant_id = req.user.tenant_id;
 
     // Validate required fields
     if (!email || !password || !role_name) {
-      return res.status(400).json({ message: "Email, password, and role name are required." });
+      return res
+        .status(400)
+        .json({ message: "Email, password, and role name are required." });
     }
 
     const transaction = await sequelize.transaction();
@@ -160,7 +185,9 @@ const registerUser = async (req, res) => {
       });
 
       if (!role) {
-        return res.status(400).json({ message: `Invalid role name: ${role_name}` });
+        return res
+          .status(400)
+          .json({ message: `Invalid role name: ${role_name}` });
       }
 
       // Check if the user already exists
@@ -244,9 +271,11 @@ const login = async (req, res) => {
 
     // Validate request body
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required." });
+      return res
+        .status(400)
+        .json({ message: "Email and password are required." });
     }
-    
+
     // Fetch the user with password included
     const user = await User.scope("withPassword").findOne({
       where: { email },
@@ -324,8 +353,6 @@ const login = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
-
 
 // referesh-token
 const refreshToken = async (req, res) => {

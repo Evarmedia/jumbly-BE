@@ -66,7 +66,7 @@ const router = express.Router();
  *         description: Internal server error.
  */
 // Route to create a new project as admin
-router.post("/admin", checkRole('admin'), createProjectAdmin);
+router.post("/admin", checkRole("admin"), createProjectAdmin);
 
 /**
  * @swagger
@@ -115,8 +115,7 @@ router.post("/admin", checkRole('admin'), createProjectAdmin);
  *         description: Internal server error.
  */
 // Route to create a new project as a client
-router.post("/", checkRole('client'), createProject);
-
+router.post("/", checkRole("client"), createProject);
 
 /**
  * @swagger
@@ -139,8 +138,7 @@ router.post("/", checkRole('client'), createProject);
  *         description: Internal server error.
  */
 // Route to list all projects
-router.get('/', listAllProjects);
-
+router.get("/", listAllProjects);
 
 /**
  * @swagger
@@ -198,8 +196,11 @@ router.get('/', listAllProjects);
  *         description: Internal server error
  */
 // Route to fetch projects for the logged-in client
-router.get("/client", checkRole('client', 'supervisor', 'admin'), getClientProjects);
-
+router.get(
+  "/client",
+  checkRole("client", "supervisor", "admin"),
+  getClientProjects
+);
 
 /**
  * @swagger
@@ -228,8 +229,7 @@ router.get("/client", checkRole('client', 'supervisor', 'admin'), getClientProje
  *         description: Internal server error.
  */
 // Route to retrieve a specific project by its ID
-router.get('/:project_id', getProjectDetails);
-
+router.get("/:project_id", getProjectDetails);
 
 /**
  * @swagger
@@ -287,8 +287,7 @@ router.get('/:project_id', getProjectDetails);
  *         description: Internal server error.
  */
 // Route to update project details
-router.put('/:project_id', checkRole('client', 'admin'), updateProjectDetails);
-
+router.put("/:project_id", checkRole("client", "admin"), updateProjectDetails);
 
 /**
  * @swagger
@@ -346,8 +345,7 @@ router.put('/:project_id', checkRole('client', 'admin'), updateProjectDetails);
  *         description: Internal server error.
  */
 // Route to update project status
-router.patch('/:project_id/status', updateProjectStatus);
-
+router.patch("/:project_id/status", updateProjectStatus);
 
 /**
  * @swagger
@@ -417,8 +415,7 @@ router.patch('/:project_id/status', updateProjectStatus);
  *         description: Internal server error.
  */
 // Route for assigning a supervisor to a project //Only Admin
-router.patch('/:project_id/assign', assignProjectSupervisor);
-
+router.patch("/:project_id/assign", assignProjectSupervisor);
 
 /**
  * @swagger
@@ -450,7 +447,6 @@ router.patch('/:project_id/assign', assignProjectSupervisor);
  *         description: Internal server error
  */
 // Route to delete a project -client and admin
-router.delete('/:project_id', checkRole('client', 'admin'), deleteProject);
-
+router.delete("/:project_id", checkRole("client", "admin"), deleteProject);
 
 module.exports = router;

@@ -1,4 +1,13 @@
-const { User, Role, UserClient, Client, Project, ProjectInventory, Item, Tenant } = require("../models/models.js");
+const {
+  User,
+  Role,
+  UserClient,
+  Client,
+  Project,
+  ProjectInventory,
+  Item,
+  Tenant,
+} = require("../models/models.js");
 const { Op } = require("sequelize");
 
 // Controller to get user profile
@@ -35,7 +44,6 @@ const profile = async (req, res) => {
   }
 };
 
-
 const getUserProfileByAdmin = async (req, res) => {
   try {
     const { user_id } = req.params;
@@ -45,7 +53,9 @@ const getUserProfileByAdmin = async (req, res) => {
 
     // Ensure only admins can access this endpoint
     if (role_name !== "admin") {
-      return res.status(403).json({ message: "Access denied. Only admins can view user profiles." });
+      return res.status(403).json({
+        message: "Access denied. Only admins can view user profiles.",
+      });
     }
 
     // Fetch the user by ID and ensure the same tenant_id
@@ -58,14 +68,21 @@ const getUserProfileByAdmin = async (req, res) => {
         },
         {
           model: Client,
-          attributes: ["client_id", "company_name", "contact_person", "official_email"], // Client details
+          attributes: [
+            "client_id",
+            "company_name",
+            "contact_person",
+            "official_email",
+          ], // Client details
           through: { attributes: [] }, // Exclude the join table
         },
       ],
     });
 
     if (!user) {
-      return res.status(404).json({ message: `User with ID ${user_id} not found or not part of your tenant.` });
+      return res.status(404).json({
+        message: `User with ID ${user_id} not found or not part of your tenant.`,
+      });
     }
 
     res.status(200).json({
@@ -77,7 +94,6 @@ const getUserProfileByAdmin = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 
 /** 
  * Update user account details{username, email, phone, company_name, contact_person, status, role_id}
@@ -181,7 +197,9 @@ const getAvailableRoles = async (req, res) => {
     const { tenant_id } = req.user;
 
     if (!tenant_id) {
-      return res.status(403).json({ message: "Access denied. Tenant ID is required." });
+      return res
+        .status(403)
+        .json({ message: "Access denied. Tenant ID is required." });
     }
 
     // Fetch all roles for the tenant
@@ -192,14 +210,18 @@ const getAvailableRoles = async (req, res) => {
 
     // If no roles found, return a message
     if (roles.length === 0) {
-      return res.status(404).json({ message: "No roles found for this tenant." });
+      return res
+        .status(404)
+        .json({ message: "No roles found for this tenant." });
     }
 
     // Return the list of roles
     return res.status(200).json(roles);
   } catch (error) {
     console.error("Error fetching roles:", error.message);
-    return res.status(500).json({ message: "Server error", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Server error", error: error.message });
   }
 };
 
@@ -209,7 +231,9 @@ const getAllStaff = async (req, res) => {
     const { tenant_id } = req.user; // Retrieve tenant_id from the authenticated user
 
     if (!tenant_id) {
-      return res.status(403).json({ message: "Access denied. Tenant ID is required." });
+      return res
+        .status(403)
+        .json({ message: "Access denied. Tenant ID is required." });
     }
 
     // Fetch all staff (operators and supervisors) for the tenant
@@ -238,7 +262,9 @@ const getAllStaff = async (req, res) => {
     });
 
     if (staff.length === 0) {
-      return res.status(404).json({ message: "No staff found for this tenant." });
+      return res
+        .status(404)
+        .json({ message: "No staff found for this tenant." });
     }
 
     res.status(200).json(staff);
@@ -250,14 +276,15 @@ const getAllStaff = async (req, res) => {
   }
 };
 
-
 // Function to retrieve all clients
 const getAllClients = async (req, res) => {
   try {
     const { tenant_id } = req.user; // Retrieve tenant_id from the authenticated user
 
     if (!tenant_id) {
-      return res.status(403).json({ message: "Access denied. Tenant ID is required." });
+      return res
+        .status(403)
+        .json({ message: "Access denied. Tenant ID is required." });
     }
 
     // Fetch all clients for the tenant
@@ -271,7 +298,15 @@ const getAllClients = async (req, res) => {
         },
         {
           model: Client,
-          attributes: ["client_id", "company_name", "contact_person", "email", "official_email", "website", "industry"],
+          attributes: [
+            "client_id",
+            "company_name",
+            "contact_person",
+            "email",
+            "official_email",
+            "website",
+            "industry",
+          ],
           through: { attributes: [] }, // Exclude UserClient attributes
         },
       ],
@@ -287,7 +322,9 @@ const getAllClients = async (req, res) => {
     });
 
     if (clients.length === 0) {
-      return res.status(404).json({ message: "No clients found for this tenant." });
+      return res
+        .status(404)
+        .json({ message: "No clients found for this tenant." });
     }
 
     res.status(200).json(clients);
@@ -323,16 +360,19 @@ const getAllAdmins = async (req, res) => {
     });
 
     if (admins.length === 0) {
-      return res.status(404).json({ message: "No admins found in the system." });
+      return res
+        .status(404)
+        .json({ message: "No admins found in the system." });
     }
 
     res.status(200).json(admins);
   } catch (error) {
     console.error("Error retrieving admins:", error.message);
-    res.status(500).send({ message: "Error retrieving admins: " + error.message });
+    res
+      .status(500)
+      .send({ message: "Error retrieving admins: " + error.message });
   }
 };
-
 
 const getAllUsers = async (req, res) => {
   try {
@@ -362,7 +402,9 @@ const getAllUsers = async (req, res) => {
     res.status(200).json(users);
   } catch (error) {
     console.error("Error retrieving users:", error.message);
-    res.status(500).send({ message: "Error retrieving users: " + error.message });
+    res
+      .status(500)
+      .send({ message: "Error retrieving users: " + error.message });
   }
 };
 
@@ -373,13 +415,17 @@ const adminUpdateUser = async (req, res) => {
 
     // Ensure only admins can access this endpoint
     if (role_name !== "admin") {
-      return res.status(403).json({ message: "Access denied. Only admins can edit user details." });
+      return res
+        .status(403)
+        .json({ message: "Access denied. Only admins can edit user details." });
     }
 
     // Check if the user exists and belongs to the same tenant
     const user = await User.findOne({ where: { user_id, tenant_id } });
     if (!user) {
-      return res.status(404).json({ message: `User with ID ${user_id} not found in your tenancy.` });
+      return res.status(404).json({
+        message: `User with ID ${user_id} not found in your tenancy.`,
+      });
     }
 
     // Update the user's details (only fields provided in the request body)
@@ -407,7 +453,19 @@ const adminUpdateUser = async (req, res) => {
         education,
         birthdate,
       },
-      { fields: ["first_name", "last_name", "email", "phone", "address", "gender", "photo", "education", "birthdate"] } // Only allow these fields to be updated
+      {
+        fields: [
+          "first_name",
+          "last_name",
+          "email",
+          "phone",
+          "address",
+          "gender",
+          "photo",
+          "education",
+          "birthdate",
+        ],
+      } // Only allow these fields to be updated
     );
 
     res.status(200).json({
@@ -419,7 +477,6 @@ const adminUpdateUser = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 
 // Super Delete User Profile
 async function superDeleteUser(req, res) {
@@ -518,8 +575,6 @@ async function superDeleteUser(req, res) {
     });
   }
 }
-
-
 
 // Delete User Profile
 async function deleteUser(req, res) {

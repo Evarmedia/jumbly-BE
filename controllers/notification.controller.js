@@ -1,5 +1,5 @@
 const { createNotification } = require("../utils/notification");
-const { User, Notification, } = require("../models/models");
+const { User, Notification } = require("../models/models");
 
 /**
  * Create a new notification for a user.
@@ -48,7 +48,6 @@ const createNotificationAdmin = async (req, res) => {
   }
 };
 
-
 /**
  * Fetch notifications for the authenticated user.
  */
@@ -89,7 +88,6 @@ const getUserNotifications = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 
 /**
  * Update the status of a notification.
@@ -138,5 +136,5 @@ const updateNotificationStatus = async (req, res) => {
 module.exports = {
   createNotificationAdmin,
   getUserNotifications,
-  updateNotificationStatus
+  updateNotificationStatus,
 };
