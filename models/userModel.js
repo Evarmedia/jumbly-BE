@@ -58,6 +58,9 @@ User.init(
     birthdate: {
       type: DataTypes.DATE,
     },
+    organisation_name: {
+      type: DataTypes.STRING,
+    },
     status: {
       type: DataTypes.ENUM('verified', 'unverified'),
       allowNull: false,

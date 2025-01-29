@@ -169,11 +169,6 @@ const options = {
               description:
                 "The name of the role (e.g., admin, client, operative, supervisor).",
             },
-            tenant_id: {
-              type: "integer",
-              description:
-                "The Tenant ID of roles, referencing the Tenants table.",
-            },
             description: {
               type: "string",
               description: "A description of the role and its permissions.",

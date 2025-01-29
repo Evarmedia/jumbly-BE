@@ -436,6 +436,7 @@ router.put('/profile', authMiddleware, updateUserDetails);
  * /api/users/edit/{user_id}:
  *   put:
  *     summary: Admin Edit a user's details - permissions(admin)
+ *     description: Allows an admin to update any user's details within their tenancy. If the user is a client, additional client-specific details can be updated.
  *     tags: [User]
  *     security:
  *       - bearerAuth: []
@@ -481,6 +482,21 @@ router.put('/profile', authMiddleware, updateUserDetails);
  *                 type: string
  *                 format: date
  *                 description: The user's date of birth.
+ *               website:
+ *                 type: string
+ *                 description: Client's website (if applicable).
+ *               company_name:
+ *                 type: string
+ *                 description: Client's company name (if applicable).
+ *               industry:
+ *                 type: string
+ *                 description: Client's industry (if applicable).
+ *               official_email:
+ *                 type: string
+ *                 description: Client's official email address (if applicable).
+ *               contact_person:
+ *                 type: string
+ *                 description: Client's contact person (if applicable).
  *     responses:
  *       200:
  *         description: User details updated successfully.
@@ -513,6 +529,25 @@ router.put('/profile', authMiddleware, updateUserDetails);
  *                     address:
  *                       type: string
  *                       description: The user's updated address.
+ *                     client_details:
+ *                       type: object
+ *                       description: Client-specific details (if the user is a client).
+ *                       properties:
+ *                         website:
+ *                           type: string
+ *                           description: Client's updated website.
+ *                         company_name:
+ *                           type: string
+ *                           description: Client's updated company name.
+ *                         industry:
+ *                           type: string
+ *                           description: Client's updated industry.
+ *                         official_email:
+ *                           type: string
+ *                           description: Client's updated official email.
+ *                         contact_person:
+ *                           type: string
+ *                           description: Client's updated contact person.
  *       403:
  *         description: Access denied. Only admins can edit user details.
  *       404:

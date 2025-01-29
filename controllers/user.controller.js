@@ -143,31 +143,6 @@ const updateUserDetails = async (req, res) => {
       birthdate,
     });
 
-    // If the user is a client, update their client-specific details
-    if (user.Role.role_name === "client") {
-      let client = await Client.findOne({ where: { tenant_id } });
-
-      if (client) {
-        await client.update({
-          website,
-          company_name,
-          industry,
-          official_email,
-          contact_person,
-        });
-      } else {
-        await Client.create({
-          email: user.email,
-          website,
-          company_name,
-          industry,
-          official_email,
-          contact_person,
-          tenant_id,
-        });
-      }
-    }
-
     // Fetch the updated user details
     const updatedUser = await User.findOne({
       where: { user_id },
@@ -182,22 +157,48 @@ const updateUserDetails = async (req, res) => {
         "education",
         "birthdate",
       ],
-      include: {
-        model: Client,
-        attributes: ["website", "company_name", "industry", "official_email", "contact_person"],
-        through: { attributes: [] },
-      },
+      include: [
+        {
+          model: Client,
+          attributes: [
+            "client_id",
+            "tenant_id",
+            "email",
+            "website",
+            "company_name",
+            "industry",
+            "official_email",
+            "contact_person",
+            "created_at",
+            "updated_at",
+          ],
+          through: { attributes: [] }, // Exclude UserClient join table details
+        },
+      ],
     });
+
+    // Modify response to include user fields inside the Clients array
+    const responseUser = updatedUser.toJSON();
+    if (responseUser.Clients && responseUser.Clients.length > 0) {
+      responseUser.Clients = responseUser.Clients.map((client) => ({
+        ...client,
+        first_name: responseUser.first_name,
+        last_name: responseUser.last_name,
+        phone: responseUser.phone,
+        photo: responseUser.photo,
+      }));
+    }
 
     return res.status(200).json({
       message: "User details updated successfully.",
-      user: updatedUser,
+      user: responseUser,
     });
   } catch (error) {
     console.error("Error updating user details:", error.message);
     return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 
 // list of available roles
@@ -514,8 +515,7 @@ const adminUpdateUser = async (req, res) => {
       include: [
         {
           model: Client,
-          attributes: ["website", "company_name", "industry", "official_email", "contact_person"],
-          through: { attributes: [] }, // 🚀 Exclude UserClient join table details
+          through: { attributes: [] },
         },
       ],
     });

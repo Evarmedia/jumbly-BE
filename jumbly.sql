@@ -33,6 +33,7 @@ CREATE TABLE Users (
     photo TEXT,                     -- Common to Supervisor, Operator, Admin, Client
     education TEXT,                 -- Unique to Supervisor, Operator
     birthdate DATE,                 -- Unique to Supervisor, Operator
+    organisation_name TEXT,         -- Unique to Admin
     status TEXT CHECK(status IN ('verified', 'unverified')) NOT NULL DEFAULT 'unverified',
     reset_token TEXT,  -- New field for password reset token
     reset_token_expiration DATETIME,  -- New field for token expiration date
