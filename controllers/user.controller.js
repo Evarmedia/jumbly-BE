@@ -1,4 +1,4 @@
-const { User, Role, UserClient, Client } = require("../models/models.js");
+const { User, Role, UserClient, Client, Project, ProjectInventory, Item, Tenant } = require("../models/models.js");
 const { Op } = require("sequelize");
 
 // Controller to get user profile
@@ -271,7 +271,7 @@ const getAllClients = async (req, res) => {
         },
         {
           model: Client,
-          attributes: ["client_id", "company_name", "contact_person", "email"], // Client attributes
+          attributes: ["client_id", "company_name", "contact_person", "email", "official_email", "website", "industry"],
           through: { attributes: [] }, // Exclude UserClient attributes
         },
       ],
@@ -421,11 +421,12 @@ const adminUpdateUser = async (req, res) => {
 };
 
 
-// Delete User Profile, for now only user and client tables are affected by this action
-async function deleteUser(req, res) {
+// Super Delete User Profile
+async function superDeleteUser(req, res) {
   const { user_id } = req.params;
 
   try {
+    // Fetch the user and their role
     const user = await User.findOne({
       where: { user_id },
       include: {
@@ -435,23 +436,21 @@ async function deleteUser(req, res) {
     });
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "User not found." });
     }
 
-    // Check if the user is a client (i.e., they are linked to a client in the UserClients table)
-    const userClients = await UserClient.findAll({
-      where: { user_id },
-    });
+    // Check if the user is an admin
+    const isAdmin = user.Role.role_name === "admin";
 
-    // If user is a client, remove them from the UserClients table and delete the associated client data
+    // Handle clients associated with the user (if any)
+    const userClients = await UserClient.findAll({ where: { user_id } });
     if (userClients.length > 0) {
       const clientIds = userClients.map((userClient) => userClient.client_id);
 
       // Remove user-client associations
-      await UserClient.destroy({
-        where: { user_id },
-      });
-      // Delete associated clients if they exist (based on the client IDs)
+      await UserClient.destroy({ where: { user_id } });
+
+      // Delete associated clients
       await Client.destroy({
         where: {
           client_id: clientIds,
@@ -459,18 +458,139 @@ async function deleteUser(req, res) {
       });
     }
 
-    // Now delete the user
+    // If the user is an admin, handle cascading deletion for tenancy
+    if (isAdmin) {
+      const adminCount = await User.count({
+        where: {
+          tenant_id: user.tenant_id,
+          role_id: user.role_id, // Count only users with the "admin" role in the same tenant
+        },
+      });
+
+      // If this is the last admin for the tenant, delete the tenant and associated records
+      if (adminCount === 1) {
+        const tenantId = user.tenant_id;
+
+        // Delete all users in the tenant
+        await User.destroy({
+          where: { tenant_id: tenantId },
+        });
+
+        // Delete all projects in the tenant
+        await Project.destroy({
+          where: { tenant_id: tenantId },
+        });
+
+        // Delete all items in the tenant
+        await Item.destroy({
+          where: { tenant_id: tenantId },
+        });
+
+        // Delete all project inventory records in the tenant
+        await ProjectInventory.destroy({
+          where: { tenant_id: tenantId },
+        });
+
+        // delete all associated roles
+        await Role.destroy({
+          where: { tenant_id: tenantId },
+        });
+
+        // Finally, delete the tenant
+        await Tenant.destroy({
+          where: { tenant_id: tenantId },
+        });
+      }
+    }
+
+    // Finally, delete the user
+    await user.destroy();
+
+    res.status(200).json({
+      message:
+        "User, associated data, and tenancy (if applicable) deleted successfully.",
+    });
+  } catch (error) {
+    console.error("Error deleting user:", error.message);
+    res.status(500).json({
+      message: "An error occurred while deleting the user.",
+      error: error.message,
+    });
+  }
+}
+
+
+
+// Delete User Profile
+async function deleteUser(req, res) {
+  const { user_id } = req.params; // ID of the user to be deleted
+  const { user_id: authenticatedUserId, tenant_id, role_name } = req.user; // Authenticated user's details
+
+  try {
+    // Prevent a user from deleting themselves
+    if (parseInt(user_id) === authenticatedUserId) {
+      return res.status(400).json({
+        message: "You cannot delete your own account.",
+      });
+    }
+
+    // Check if the user exists and belongs to the same tenant
+    const user = await User.findOne({
+      where: { user_id, tenant_id }, // Ensure the user belongs to the same tenant
+      include: {
+        model: Role,
+        attributes: ["role_name"],
+      },
+    });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: "User not found in your tenancy." });
+    }
+
+    // Ensure only admins can delete users
+    if (role_name !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized. Only admins can delete users." });
+    }
+
+    // Check if the user is a client (i.e., linked to a client in the UserClients table)
+    const userClients = await UserClient.findAll({
+      where: { user_id },
+    });
+
+    if (userClients.length > 0) {
+      const clientIds = userClients.map((userClient) => userClient.client_id);
+
+      // Remove user-client associations
+      await UserClient.destroy({
+        where: { user_id },
+      });
+
+      // Delete associated clients (if they exist and belong to the same tenant)
+      await Client.destroy({
+        where: {
+          client_id: clientIds,
+          tenant_id, // Prevent deleting clients outside the tenant
+        },
+      });
+    }
+
+    // Delete the user
     await user.destroy();
 
     // Send a response
     res
       .status(200)
-      .json({ message: "User and associated data deleted successfully" });
+      .json({ message: "User and associated data deleted successfully." });
   } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ message: "An error occurred while deleting the user" });
+    console.error("Error deleting user:", error.message);
+    res.status(500).json({
+      message: "An error occurred while deleting the user.",
+      error: error.message,
+    });
   }
 }
 
@@ -484,5 +604,6 @@ module.exports = {
   getAllClients,
   getAllAdmins,
   getAllUsers,
+  superDeleteUser,
   deleteUser,
 };

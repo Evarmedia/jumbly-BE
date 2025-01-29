@@ -29,6 +29,11 @@ const options = {
               description:
                 "The role ID of the user, referencing the Roles table.",
             },
+            tenant_id: {
+              type: "integer",
+              description:
+                "The Tenant ID of user, referencing the Tenants table.",
+            },
             email: {
               type: "string",
               format: "email",
@@ -108,6 +113,11 @@ const options = {
               type: "integer",
               description: "The unique ID of the client.",
             },
+            tenant_id: {
+              type: "integer",
+              description:
+                "The Tenant ID of client, referencing the Tenants table.",
+            },
             email: {
               type: "string",
               format: "email",
@@ -159,6 +169,11 @@ const options = {
               description:
                 "The name of the role (e.g., admin, client, operative, supervisor).",
             },
+            tenant_id: {
+              type: "integer",
+              description:
+                "The Tenant ID of roles, referencing the Tenants table.",
+            },
             description: {
               type: "string",
               description: "A description of the role and its permissions.",
@@ -185,6 +200,11 @@ const options = {
             client_id: {
               type: "integer",
               description: "The ID of the associated client.",
+            },
+            tenant_id: {
+              type: "integer",
+              description:
+                "The Tenant ID associated with project, referencing the Tenants table.",
             },
             project_name: {
               type: "string",
@@ -531,6 +551,11 @@ const options = {
               description:
                 "The ID of the user to whom the notification is sent.",
             },
+            tenant_id: {
+              type: "integer",
+              description:
+                "The Tenant ID of user, referencing the Tenants table.",
+            },
             message: {
               type: "string",
               description: "The content of the notification.",
@@ -574,6 +599,11 @@ const options = {
               type: "integer",
               description: "The unique ID of the item.",
             },
+            tenant_id: {
+              type: "integer",
+              description:
+                "The Tenant ID, referencing the Tenants table.",
+            },
             name: {
               type: "string",
               description: "The name of the item.",
@@ -594,6 +624,11 @@ const options = {
             id: {
               type: "integer",
               description: "The unique ID of the project inventory record.",
+            },
+            tenant_id: {
+              type: "integer",
+              description:
+                "The Tenant ID, referencing the Tenants table.",
             },
             project_id: {
               type: "integer",

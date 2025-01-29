@@ -1,5 +1,5 @@
 const express = require('express');
-const { profile, getUserProfileByAdmin, updateUserDetails, adminUpdateUser, getAvailableRoles, getAllStaff, getAllClients, getAllAdmins,  getAllUsers, deleteUser } = require('../controllers/user.controller.js');
+const { profile, getUserProfileByAdmin, updateUserDetails, adminUpdateUser, getAvailableRoles, getAllStaff, getAllClients, getAllAdmins,  getAllUsers, superDeleteUser, deleteUser } = require('../controllers/user.controller.js');
 const {checkRole} = require('../middleware/roleMiddleware.js');
 const authMiddleware = require('../middleware/authMiddleware.js');
 
@@ -194,7 +194,7 @@ router.get('/clients', checkRole('admin'), getAllClients);
  * @swagger
  * /api/users/admins:
  *   get:
- *     summary: Retrieve all admins in the system - permissions(admin)
+ *     summary: Retrieve all admins in the system - permissions(admin) DEV only
  *     tags: [User]
  *     security:
  *       - bearerAuth: []
@@ -250,7 +250,7 @@ router.get("/admins", authMiddleware, getAllAdmins);
  * @swagger
  * /api/users/:
  *   get:
- *     summary: Retrieve all users in the system - permissions(admin)
+ *     summary: Retrieve all users in the system - permissions(admin) DEV only
  *     tags: [User]
  *     security:
  *       - bearerAuth: []
@@ -399,7 +399,7 @@ router.get("/", authMiddleware, getAllUsers);
  *       500:
  *         description: Internal server error
  */
-router.put('/:user_id', updateUserDetails);
+router.put('/:user_id', authMiddleware, updateUserDetails);
 
 
 /**
@@ -514,5 +514,26 @@ router.put("/edit/:user_id", authMiddleware, adminUpdateUser);
  *         description: User account deleted
  */
 router.delete('/delete/:user_id', checkRole('admin'),  deleteUser);
+
+/**
+ * @swagger
+ * /api/users/superdelete/{user_id}:
+ *   delete:
+ *     summary: Super Delete admins account - DEV only⚠️
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [User]
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: User ID
+ *     responses:
+ *       204:
+ *         description: User account deleted
+ */
+router.delete('/superdelete/:user_id', checkRole('admin'),  superDeleteUser);
 
 module.exports = router;

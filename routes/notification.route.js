@@ -96,7 +96,7 @@ router.get('/', getUserNotifications);
  * @swagger
  * /api/notifications/{notificationId}/status:
  *   patch:
- *     summary: Mark a notification as read or unread
+ *     summary: Mark a notification as read or unread by a logged in user
  *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []  # Ensure authentication is required

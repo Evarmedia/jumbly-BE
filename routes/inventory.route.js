@@ -56,13 +56,47 @@ router.post('/', checkRole('admin'), createItem);
  * @swagger
  * /api/inventory:
  *   get:
- *     summary: Retrieve a list of all items in the main inventory
+ *     summary: Retrieve all items in the inventory (tenant-specific)
+ *     description: Fetch all items belonging to the authenticated user's tenant with optional filtering, sorting, and pagination.
  *     tags: [Inventory]
  *     security:
- *       - bearerAuth: []  # Ensure authentication is required
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: name
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: The name (or partial name) of the item to search for (case-insensitive).
+ *       - in: query
+ *         name: min_quantity
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Minimum quantity of items to filter by.
+ *       - in: query
+ *         name: max_quantity
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Maximum quantity of items to filter by.
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         required: false
+ *         description: Page number for pagination.
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         required: false
+ *         description: Number of items per page for pagination.
  *     responses:
  *       200:
- *         description: Items retrieved successfully.
+ *         description: List of items retrieved successfully.
  *         content:
  *           application/json:
  *             schema:
@@ -74,11 +108,58 @@ router.post('/', checkRole('admin'), createItem);
  *                 items:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Item'
+ *                     type: object
+ *                     properties:
+ *                       item_id:
+ *                         type: integer
+ *                         description: The ID of the item.
+ *                       name:
+ *                         type: string
+ *                         description: The name of the item.
+ *                       quantity:
+ *                         type: integer
+ *                         description: The quantity of the item.
+ *                       description:
+ *                         type: string
+ *                         description: A brief description of the item.
+ *                       tenant_id:
+ *                         type: integer
+ *                         description: The tenant ID the item belongs to.
+ *                 page:
+ *                   type: integer
+ *                   description: Current page number.
+ *                   example: 1
+ *                 limit:
+ *                   type: integer
+ *                   description: Number of items per page.
+ *                   example: 10
+ *                 total:
+ *                   type: integer
+ *                   description: Total number of items matching the criteria.
+ *                   example: 20
  *       404:
  *         description: No items found in the inventory.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: No items found in your inventory.
  *       500:
- *         description: Server error.
+ *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Server error.
+ *                 error:
+ *                   type: string
+ *                   description: Error message.
  */
 // Route to get all items in the main inventory
 router.get('/', checkRole('admin'), getAllItems);

@@ -1,4 +1,5 @@
 const { createNotification } = require("../utils/notification");
+const { User, Notification, } = require("../models/models");
 
 /**
  * Create a new notification for a user.
@@ -6,6 +7,7 @@ const { createNotification } = require("../utils/notification");
 const createNotificationAdmin = async (req, res) => {
   try {
     const { user_id, message, type, priority } = req.body;
+    const { tenant_id } = req.user; // Get the tenant ID of the authenticated admin
 
     // Validate required fields
     if (!user_id || !message) {
@@ -14,12 +16,27 @@ const createNotificationAdmin = async (req, res) => {
         .json({ message: "user_id and message are required." });
     }
 
-    // Call the utility function to create the notification
+    // Check if the user exists and belongs to the same tenant
+    const user = await User.findOne({
+      where: {
+        user_id,
+        tenant_id, // Ensure the user belongs to the same tenant
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: `User with ID ${user_id} not found in your tenancy.`,
+      });
+    }
+
+    // Call the utility function with tenant_id
     await createNotification(
       user_id,
       message,
       type || "system",
-      priority || "medium"
+      priority || "medium",
+      tenant_id // Pass tenant_id to the notification function
     );
 
     res.status(201).json({
@@ -31,23 +48,29 @@ const createNotificationAdmin = async (req, res) => {
   }
 };
 
+
 /**
  * Fetch notifications for the authenticated user.
  */
 const getUserNotifications = async (req, res) => {
   try {
     const { user_id } = req.user; // Get the authenticated user's ID
-    const { status, type } = req.query; // Optional filters for status and type
+    const { status, type, page = 1, limit = 10 } = req.query; // Optional filters and pagination
 
     // Build query conditions
     const where = { user_id };
     if (status) where.status = status;
     if (type) where.type = type;
 
-    // Fetch notifications from the database
-    const notifications = await Notification.findAll({
+    // Calculate offset for pagination
+    const offset = (page - 1) * limit;
+
+    // Fetch notifications with pagination
+    const { count, rows: notifications } = await Notification.findAndCountAll({
       where,
-      order: [["created_at", "DESC"]], // Order notifications by most recent
+      order: [["created_at", "DESC"]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
     });
 
     if (!notifications.length) {
@@ -57,12 +80,16 @@ const getUserNotifications = async (req, res) => {
     res.status(200).json({
       message: "Notifications fetched successfully.",
       notifications,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total: count, // Total number of notifications matching the query
     });
   } catch (error) {
     console.error("Error fetching notifications:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 /**
  * Update the status of a notification.
@@ -71,6 +98,7 @@ const updateNotificationStatus = async (req, res) => {
   try {
     const { notificationId } = req.params; // Notification ID from the path parameter
     const { status } = req.body; // New status from the request body
+    const { user_id } = req.user; // Authenticated user's ID
 
     // Validate required fields
     if (!status || !["read", "unread"].includes(status)) {
@@ -80,12 +108,18 @@ const updateNotificationStatus = async (req, res) => {
       });
     }
 
-    // Find the notification by ID
-    const notification = await Notification.findByPk(notificationId);
+    // Find the notification by ID and ensure it belongs to the authenticated user
+    const notification = await Notification.findOne({
+      where: {
+        notification_id: notificationId,
+        user_id, // Ensure the notification belongs to the authenticated user
+      },
+    });
+
     if (!notification) {
-      return res
-        .status(404)
-        .json({ message: `Notification with ID ${notificationId} not found.` });
+      return res.status(404).json({
+        message: `Notification with ID ${notificationId} not found for your account.`,
+      });
     }
 
     // Update the status
