@@ -24,6 +24,7 @@ const profile = async (req, res) => {
         "user_id",
         "first_name",
         "last_name",
+        "status",
         "address",
         "gender",
         "phone",

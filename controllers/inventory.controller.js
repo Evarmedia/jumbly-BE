@@ -81,7 +81,7 @@ const getAllItems = async (req, res) => {
 
     if (name) {
       whereClause.name = {
-        [Op.iLike]: `%${name}%`, // Case-insensitive partial match
+        [Op.like]: `%${name.toLowerCase()}%`, // Case-insensitive match
       };
     }
 

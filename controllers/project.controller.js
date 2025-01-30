@@ -274,6 +274,11 @@ const listAllProjects = async (req, res) => {
           attributes: ["status_name"],
           as: "status", // Use the alias defined in the models
         },
+        {
+          model: User, // Include supervisor details from User table
+          as: "Supervisor", // Ensure this matches the model association
+          attributes: ["first_name", "last_name"],
+        },
       ],
       limit: parseInt(limit),
       offset: parseInt(offset),
@@ -292,10 +297,30 @@ const listAllProjects = async (req, res) => {
         project_name: project.project_name,
         start_date: project.start_date,
         end_date: project.end_date,
+        supervisor_id: project.supervisor_id,
+        supervisor_first_name: project.Supervisor
+          ? project.Supervisor.first_name
+          : null,
+        supervisor_last_name: project.Supervisor
+          ? project.Supervisor.last_name
+          : null,
         status_id: project.status_id,
         status_name: project.status ? project.status.status_name : "Unknown",
         description: project.description,
-        client: project.Client, // Include client details
+        // Flatten client details into the main object
+        client_id: project.Client ? project.Client.client_id : null,
+        client_company_name: project.Client
+          ? project.Client.company_name
+          : null,
+        client_contact_person: project.Client
+          ? project.Client.contact_person
+          : null,
+        client_email: project.Client ? project.Client.email : null,
+        client_official_email: project.Client
+          ? project.Client.official_email
+          : null,
+        client_website: project.Client ? project.Client.website : null,
+        client_industry: project.Client ? project.Client.industry : null,
       })),
       page: parseInt(page),
       limit: parseInt(limit),
@@ -323,8 +348,8 @@ const getClientProjects = async (req, res) => {
         },
         {
           model: Client,
-          through: UserClient, // Include the UserClient join table
-          attributes: ["client_id", "company_name", "contact_person", "email"], // Fetch client details
+          through: { attributes: [] }, // Exclude UserClient join table details
+          attributes: ["client_id", "company_name", "contact_person", "email"],
         },
       ],
     });
@@ -338,7 +363,7 @@ const getClientProjects = async (req, res) => {
     }
 
     // Retrieve the client_id (assuming one-to-one client relationship for simplicity)
-    const { client_id } = user.Clients[0]; // Adjust if there are multiple clients
+    const { client_id, company_name, contact_person, email } = user.Clients[0]; // Adjust if there are multiple clients
 
     // Fetch all projects for the client within the same tenant
     const projects = await Project.findAll({
@@ -347,6 +372,12 @@ const getClientProjects = async (req, res) => {
         {
           model: ProjectStatus, // Include project status details
           attributes: ["status_name"],
+          as: "status",
+        },
+        {
+          model: User, // Include supervisor details
+          as: "Supervisor",
+          attributes: ["first_name", "last_name"],
         },
       ],
     });
@@ -365,11 +396,22 @@ const getClientProjects = async (req, res) => {
         project_name: project.project_name,
         start_date: project.start_date,
         end_date: project.end_date,
+        // Include supervisor details
+        supervisor_id: project.supervisor_id,
+        supervisor_first_name: project.Supervisor
+          ? project.Supervisor.first_name
+          : null,
+        supervisor_last_name: project.Supervisor
+          ? project.Supervisor.last_name
+          : null,
         status_id: project.status_id,
-        status_name: project.ProjectStatus
-          ? project.ProjectStatus.status_name
-          : "Unknown",
+        status_name: project.status ? project.status.status_name : "Unknown",
         description: project.description,
+        // Flatten client details directly into the project object
+        client_id,
+        client_company_name: company_name,
+        client_contact_person: contact_person,
+        client_email: email,
       })),
     });
   } catch (error) {
@@ -384,7 +426,7 @@ const getProjectDetails = async (req, res) => {
     const { project_id } = req.params; // Extract project_id from the request params
     const { tenant_id } = req.user; // Get the tenant ID from the authenticated user
 
-    // Fetch the project details and include client & status information
+    // Fetch the project details and include client, status, and supervisor information
     const project = await Project.findOne({
       where: { project_id, tenant_id }, // Ensure project belongs to the authenticated user's tenant
       include: [
@@ -395,6 +437,12 @@ const getProjectDetails = async (req, res) => {
         {
           model: ProjectStatus, // Include project status details
           attributes: ["status_name"],
+          as: "status",
+        },
+        {
+          model: User, // Include supervisor details from User table
+          as: "Supervisor",
+          attributes: ["user_id", "first_name", "last_name"],
         },
       ],
     });
@@ -413,11 +461,21 @@ const getProjectDetails = async (req, res) => {
         start_date: project.start_date,
         end_date: project.end_date,
         status_id: project.status_id,
-        status_name: project.ProjectStatus
-          ? project.ProjectStatus.status_name
-          : "Unknown",
+        status_name: project.status ? project.status.status_name : "Unknown",
         description: project.description,
-        client: project.Client, // Include client details in the response
+        // Flatten client details directly into the project object
+        client_id: project.Client ? project.Client.client_id : null,
+        client_company_name: project.Client ? project.Client.company_name : null,
+        client_contact_person: project.Client ? project.Client.contact_person : null,
+        client_email: project.Client ? project.Client.email : null,
+        // Include supervisor details
+        supervisor_id: project.supervisor_id,
+        supervisor_first_name: project.Supervisor
+          ? project.Supervisor.first_name
+          : null,
+        supervisor_last_name: project.Supervisor
+          ? project.Supervisor.last_name
+          : null,
       },
     });
   } catch (error) {

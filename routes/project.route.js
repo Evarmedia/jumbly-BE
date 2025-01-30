@@ -138,7 +138,7 @@ router.post("/", checkRole("client"), createProject);
  *         description: Internal server error.
  */
 // Route to list all projects
-router.get("/", listAllProjects);
+router.get("/", checkRole("admin"), listAllProjects);
 
 /**
  * @swagger
