@@ -35,35 +35,34 @@ const createTask = async (req, res) => {
       return res.status(404).json({ message: `Project with ID ${project_id} not found in your tenancy.` });
     }
 
-    // Validate that `assigned_by` exists and is either a supervisor or admin
-    let assigner = await User.findOne({
-      where: { user_id: assigned_by, tenant_id },
-      include: {
-        model: Role,
-        attributes: ["role_name"], // ✅ Ensure Role is loaded
-      },
-    });
-
-    // Ensure assigner exists and has a valid role
-    if (!assigner || !assigner.Role || !["supervisor", "admin"].includes(assigner.Role.role_name)) {
-      return res.status(404).json({
-        message: `Assigned_by user with ID ${assigned_by} is neither an admin nor a supervisor.`,
+    // Validate `assigned_by` only if it's provided
+    let assigner = null;
+    if (assigned_by) {
+      assigner = await User.findOne({
+        where: { user_id: assigned_by, tenant_id },
+        include: { model: Role, attributes: ["role_name"] },
       });
+
+      if (!assigner || !assigner.Role || !["supervisor", "admin"].includes(assigner.Role.role_name)) {
+        return res.status(404).json({
+          message: `Assigned_by user with ID ${assigned_by} is neither an admin nor a supervisor.`,
+        });
+      }
     }
 
-    // Validate that `assigned_to` exists and is an operator
-    let operator = await User.findOne({
-      where: { user_id: assigned_to, tenant_id },
-      include: {
-        model: Role,
-        attributes: ["role_name"],
-      },
-    });
-
-    if (!operator || operator.Role.role_name !== "operator") {
-      return res.status(404).json({
-        message: `Assigned_to user with ID ${assigned_to} is not an operator.`,
+    // Validate `assigned_to` only if it's provided
+    let operator = null;
+    if (assigned_to) {
+      operator = await User.findOne({
+        where: { user_id: assigned_to, tenant_id },
+        include: { model: Role, attributes: ["role_name"] },
       });
+
+      if (!operator || operator.Role.role_name !== "operator") {
+        return res.status(404).json({
+          message: `Assigned_to user with ID ${assigned_to} is not an operator.`,
+        });
+      }
     }
 
     // Create the task
@@ -71,8 +70,8 @@ const createTask = async (req, res) => {
       project_id,
       task_name,
       task_description,
-      assigned_by,
-      assigned_to,
+      assigned_by: assigned_by || null, // Allow null values
+      assigned_to: assigned_to || null,
       status_id,
       priority_id,
       due_date,
@@ -116,17 +115,17 @@ const createTask = async (req, res) => {
       category_name: createdTask.category ? createdTask.category.category_name : "Uncategorized",
       project_id: createdTask.Project ? createdTask.Project.project_id : null,
       project_name: createdTask.Project ? createdTask.Project.project_name : null,
-      assigned_by: assigner.user_id,
-      assigned_by_role: assigner.Role.role_name,
-      assigned_to: operator.user_id,
-      assigned_to_role: operator.Role.role_name,
-
+      assigned_by: assigner ? assigner.user_id : null,
+      assigned_by_role: assigner ? assigner.Role.role_name : null,
+      assigned_to: operator ? operator.user_id : null,
+      assigned_to_role: operator ? operator.Role.role_name : null,
     });
   } catch (error) {
     console.error("Error creating task:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 
 const getProjectTasks = async (req, res) => {
