@@ -3,13 +3,19 @@ const {
   ProjectInventory,
   Item,
   Project,
+  Client,
+  User,
 } = require("../models/models");
+
+const sequelize = require("../config/db");
+const { Op } = require("sequelize");
 
 /**
  * Borrow an item from the main inventory to a project's inventory.
  */
 const borrowItem = async (req, res) => {
   try {
+    const { tenant_id, role_name } = req.user; // Get tenant_id and role from authenticated user
     const { item_id, project_id, quantity } = req.body;
 
     // Validate required fields
@@ -26,8 +32,34 @@ const borrowItem = async (req, res) => {
         .json({ message: "Quantity must be greater than zero." });
     }
 
-    // Fetch the item from the main inventory
-    const item = await Item.findByPk(item_id);
+    // Ensure the project exists and belongs to the same tenant
+    const project = await Project.findOne({
+      where: { project_id, tenant_id },
+      include: [
+        {
+          model: Client,
+          attributes: ["client_id", "company_name", "contact_person", "email"],
+        },
+        {
+          model: User, // Include supervisor details
+          as: "Supervisor",
+          attributes: ["user_id", "first_name", "last_name"],
+        },
+      ],
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        message: `Project with ID ${project_id} not found in your tenancy.`,
+      });
+    }
+
+    // Ensure the item exists and belongs to the same tenant
+    const item = await Item.findOne({
+      where: { item_id, tenant_id }, // Restrict item access to the same tenant
+      attributes: ["item_id", "name", "quantity"], // Fetch item name and quantity
+    });
+
     if (!item) {
       return res
         .status(404)
@@ -45,9 +77,9 @@ const borrowItem = async (req, res) => {
     item.quantity -= quantity;
     await item.save();
 
-    // Add or update the quantity in the project's inventory
+    // Add or update the quantity in the project's inventory, ensuring tenant scope
     const projectInventory = await ProjectInventory.findOne({
-      where: { project_id, item_id },
+      where: { project_id, item_id, tenant_id },
     });
 
     if (projectInventory) {
@@ -58,6 +90,7 @@ const borrowItem = async (req, res) => {
         project_id,
         item_id,
         quantity,
+        tenant_id, // Ensure project inventory is linked to the same tenant
       });
     }
 
@@ -65,13 +98,48 @@ const borrowItem = async (req, res) => {
     const newTransaction = await Transaction.create({
       item_id,
       project_id,
-      quantity,
+      quantity, // Quantity borrowed
       action: "borrow",
+      tenant_id, // Ensure transaction is tenant-scoped
     });
 
+    // Insert into AuditLogs
+    await sequelize.query(
+      `INSERT INTO AuditLogs (table_name, action, record_id, user_id, change_details, timestamp)
+       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      {
+        replacements: [
+          "Transactions",
+          "INSERT",
+          newTransaction.transaction_id,
+          req.user.user_id,
+          `User with ID ${req.user.user_id} borrowed ${quantity} of item ID ${item_id} for project ID ${project_id}`,
+        ],
+      }
+    );
+
     res.status(201).json({
-      message: "Item borrowed successfully.",
-      transaction: newTransaction,
+      message: "Transaction Complete, Item borrowed successfully.",
+      transaction_id: newTransaction.transaction_id,
+      item_id: item.item_id,
+      item_name: item.name,
+      quantity_borrowed: quantity,
+      quantity_left: item.quantity,
+      project_id: project.project_id,
+      project_name: project.project_name,
+      start_date: project.start_date,
+      end_date: project.end_date,
+      client_id: project.Client ? project.Client.client_id : null,
+      client_company_name: project.Client ? project.Client.company_name : null,
+      client_contact_person: project.Client ? project.Client.contact_person : null,
+      client_email: project.Client ? project.Client.email : null,
+      supervisor_id: project.Supervisor ? project.Supervisor.user_id : null,
+      supervisor_first_name: project.Supervisor
+        ? project.Supervisor.first_name
+        : null,
+      supervisor_last_name: project.Supervisor
+        ? project.Supervisor.last_name
+        : null,
     });
   } catch (error) {
     console.error("Error borrowing item:", error.message);
@@ -79,11 +147,13 @@ const borrowItem = async (req, res) => {
   }
 };
 
+
 /**
  * Return an item from a project's inventory to the main inventory.
  */
 const returnItem = async (req, res) => {
   try {
+    const { tenant_id } = req.user; // Get tenant_id from authenticated user
     const { item_id, project_id, quantity } = req.body;
 
     // Validate required fields
@@ -100,9 +170,31 @@ const returnItem = async (req, res) => {
         .json({ message: "Quantity must be greater than zero." });
     }
 
-    // Fetch the item from the project's inventory
+    // Ensure the project exists and belongs to the same tenant
+    const project = await Project.findOne({
+      where: { project_id, tenant_id },
+      include: [
+        {
+          model: Client,
+          attributes: ["client_id", "company_name", "contact_person", "email"],
+        },
+        {
+          model: User, // Include supervisor details
+          as: "Supervisor",
+          attributes: ["user_id", "first_name", "last_name"],
+        },
+      ],
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        message: `Project with ID ${project_id} not found in your tenancy.`,
+      });
+    }
+
+    // Fetch the item from the project's inventory (tenant-scoped)
     const projectInventory = await ProjectInventory.findOne({
-      where: { item_id, project_id },
+      where: { item_id, project_id, tenant_id },
     });
 
     if (!projectInventory) {
@@ -118,6 +210,18 @@ const returnItem = async (req, res) => {
         .json({ message: "Cannot return more items than currently borrowed." });
     }
 
+    // Fetch the item from the main inventory (tenant-scoped)
+    const item = await Item.findOne({
+      where: { item_id, tenant_id },
+      attributes: ["item_id", "name", "quantity"], // Fetch item name and quantity
+    });
+
+    if (!item) {
+      return res.status(404).json({
+        message: `Item with ID ${item_id} not found in the main inventory.`,
+      });
+    }
+
     // Update the project's inventory
     projectInventory.quantity -= quantity;
     if (projectInventory.quantity === 0) {
@@ -127,13 +231,6 @@ const returnItem = async (req, res) => {
     }
 
     // Update the main inventory
-    const item = await Item.findByPk(item_id);
-    if (!item) {
-      return res.status(404).json({
-        message: `Item with ID ${item_id} not found in the main inventory.`,
-      });
-    }
-
     item.quantity += quantity;
     await item.save();
 
@@ -141,19 +238,55 @@ const returnItem = async (req, res) => {
     const newTransaction = await Transaction.create({
       item_id,
       project_id,
-      quantity,
+      quantity, // Quantity returned
       action: "return",
+      tenant_id, // Ensure transaction is tenant-scoped
     });
+
+    // Insert into AuditLogs
+    await sequelize.query(
+      `INSERT INTO AuditLogs (table_name, action, record_id, user_id, change_details, timestamp)
+       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      {
+        replacements: [
+          "Transactions",
+          "INSERT",
+          newTransaction.transaction_id,
+          req.user.user_id,
+          `User with ID ${req.user.user_id} returned ${quantity} of item ID ${item_id} for project ID ${project_id}`,
+        ],
+      }
+    );
 
     res.status(201).json({
       message: "Item returned successfully.",
-      transaction: newTransaction,
+      item_id: item.item_id,
+      item_name: item.name,
+      quantity_returned: quantity,
+      quantity_left: projectInventory.quantity, // Updated item quantity after returning
+      transaction_id: newTransaction.transaction_id,
+      project_id: project.project_id,
+      project_name: project.project_name,
+      start_date: project.start_date,
+      end_date: project.end_date,
+      client_id: project.Client ? project.Client.client_id : null,
+      client_company_name: project.Client ? project.Client.company_name : null,
+      client_contact_person: project.Client ? project.Client.contact_person : null,
+      client_email: project.Client ? project.Client.email : null,
+      supervisor_id: project.Supervisor ? project.Supervisor.user_id : null,
+      supervisor_first_name: project.Supervisor
+        ? project.Supervisor.first_name
+        : null,
+      supervisor_last_name: project.Supervisor
+        ? project.Supervisor.last_name
+        : null,
     });
   } catch (error) {
     console.error("Error returning item:", error.message);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 /**
  * Retrieve a list of all transactions (borrow/return logs).

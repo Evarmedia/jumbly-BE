@@ -248,10 +248,12 @@ CREATE TABLE Transactions (
     transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
     item_id INTEGER NOT NULL,
     project_id INTEGER NOT NULL,
+    tenant_id INTEGER NOT NULL,
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     action TEXT NOT NULL CHECK (action IN ('borrow', 'return')),
     date DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (item_id) REFERENCES Items(item_id) ON DELETE CASCADE,
+    FOREIGN KEY (tenant_id) REFERENCES Tenants(tenant_id),
     FOREIGN KEY (project_id) REFERENCES Projects(project_id) ON DELETE CASCADE
 );
 
