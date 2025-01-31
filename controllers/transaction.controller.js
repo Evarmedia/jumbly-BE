@@ -259,7 +259,7 @@ const returnItem = async (req, res) => {
     );
 
     res.status(201).json({
-      message: "Item returned successfully.",
+      message: "Transaction completed, Item returned successfully.",
       item_id: item.item_id,
       item_name: item.name,
       quantity_returned: quantity,

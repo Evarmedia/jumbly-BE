@@ -126,8 +126,6 @@ const createTask = async (req, res) => {
   }
 };
 
-
-
 const getProjectTasks = async (req, res) => {
   try {
     const { project_id } = req.params;
