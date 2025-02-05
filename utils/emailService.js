@@ -1,6 +1,6 @@
-// utils/emailService.js
-
 const nodemailer = require('nodemailer');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 // Create a Nodemailer transporter using SMTP
@@ -12,21 +12,29 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  // tls: {
-  //   rejectUnauthorized: false,  // Disable TLS verification (useful for self-signed certificates)
-  // },
   pool: true,  // Enable connection pooling
   socketTimeout: 30000,  // Increase timeout (default: 10000 ms)
   connectionTimeout: 30000,  // Set connection timeout to 30 seconds
 });
 
+// Function to read HTML template and replace placeholders
+const readTemplate = async (templatePath, replacements) => {
+  const template = await fs.promises.readFile(templatePath, 'utf8');
+  return Object.keys(replacements).reduce((acc, key) => {
+    return acc.replace(new RegExp(`{{${key}}}`, 'g'), replacements[key]);
+  }, template);
+};
+
 // Function to send verification email
 const sendVerificationEmail = async (userEmail, verificationCode) => {
+  const templatePath = path.join(__dirname, '../templates/verificationEmail.html');
+  const html = await readTemplate(templatePath, { verificationCode });
+
   const mailOptions = {
     from: process.env.EMAIL_FROM,
     to: userEmail,
     subject: 'Email Verification Code',
-    text: `Welcome to Jumbly, Your verification code is: ${verificationCode}, This code expires in 10 minutes`,
+    html: html,
   };
 
   try {
@@ -39,13 +47,15 @@ const sendVerificationEmail = async (userEmail, verificationCode) => {
 
 // Function to send password reset email
 const sendResetPasswordEmail = async (userEmail, resetToken) => {
-  const resetLink = `${process.env.FRONTEND_URL}/?token=${resetToken}`;
+  const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+  const templatePath = path.join(__dirname, '../templates/resetPasswordEmail.html');
+  const html = await readTemplate(templatePath, { userEmail, resetLink });
 
   const mailOptions = {
     from: process.env.EMAIL_FROM,
     to: userEmail,
     subject: 'Password Reset Request',
-    text: `We received a request to reset your password. Click the following link to reset your password: ${resetLink}`,
+    html: html,
   };
 
   try {
@@ -58,4 +68,26 @@ const sendResetPasswordEmail = async (userEmail, resetToken) => {
 };
 
 
-module.exports = { sendVerificationEmail, sendResetPasswordEmail };
+// Function to send password reset email
+const sendRegistrationPasswordResetEmail = async (userEmail, resetToken) => {
+  const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+  const templatePath = path.join(__dirname, '../templates/registrationPasswordEmail.html');
+  const html = await readTemplate(templatePath, { userEmail, resetLink });
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: userEmail,
+    subject: 'Welcome to JUMBLY - Reset your password',
+    html: html,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Registration Reset email sent: ', info.response);
+  } catch (error) {
+    console.error('Error sending registration reset email: ', error);
+    throw new Error('Failed to send registration reset password email');
+  }
+};
+
+module.exports = { sendVerificationEmail, sendResetPasswordEmail, sendRegistrationPasswordResetEmail };

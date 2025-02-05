@@ -12,6 +12,7 @@ const crypto = require("crypto");
 const {
   sendVerificationEmail,
   sendResetPasswordEmail,
+  sendRegistrationPasswordResetEmail,
 } = require("../utils/emailService.js");
 const { Op } = require("sequelize");
 const sequelize = require("../config/db");
@@ -43,7 +44,9 @@ const registerTenant = async (req, res) => {
 
     // Validate required fields
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required." });
+      return res
+        .status(400)
+        .json({ message: "Email and password are required." });
     }
 
     const transaction = await sequelize.transaction();
@@ -110,8 +113,23 @@ const registerTenant = async (req, res) => {
       // Commit the transaction
       await transaction.commit();
 
+      // // Generate a verification code
+      // const verificationCode = crypto.randomBytes(3).toString('hex');
+
+      // // Store the code in Redis with an expiration time (10 minutes)
+      // redis
+      //   .setex(`verification_code_${email}`, 600, verificationCode)
+      //   .catch((err) =>
+      //     console.error("Failed to store verification code in Redis:", err)
+      //   );
+
+      // // Send the verification email
+      // sendVerificationEmail(email, verificationCode).catch((err) =>
+      //   console.error("Failed to send verification email:", err)
+      // );
+
       return res.status(201).json({
-        message: "Tenant registered successfully.",
+        message: "Tenant registered successfully, Verification code sent!.",
         user: {
           tenant_id: newTenant.tenant_id,
           tenant_name: newTenant.tenant_name,
@@ -129,7 +147,6 @@ const registerTenant = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 
 const registerUser = async (req, res) => {
   try {
@@ -153,15 +170,19 @@ const registerUser = async (req, res) => {
     } = req.body;
 
     // Validate that only admins can register new users
-    if (req.user.role_name !== "admin") {
-      return res.status(403).json({ message: "Only admins can register new users." });
+    if (!req.user || req.user.role_name !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Only admins can register new users." });
     }
 
     const tenant_id = req.user.tenant_id;
 
     // Validate required fields
     if (!email || !password || !role_name) {
-      return res.status(400).json({ message: "Email, password, and role name are required." });
+      return res
+        .status(400)
+        .json({ message: "Email, password, and role name are required." });
     }
 
     const transaction = await sequelize.transaction();
@@ -175,7 +196,11 @@ const registerUser = async (req, res) => {
       });
 
       if (!role) {
-        return res.status(400).json({ message: `Invalid role name: ${role_name}. Please create it first.` });
+        return res
+          .status(400)
+          .json({
+            message: `Invalid role name: ${role_name}. Please create it first.`,
+          });
       }
 
       // Ensure that the tenant has access to the role
@@ -185,7 +210,11 @@ const registerUser = async (req, res) => {
       });
 
       if (!tenantRole) {
-        return res.status(403).json({ message: `Role '${role_name}' is not assigned to this tenant. Please add it first.` });
+        return res
+          .status(403)
+          .json({
+            message: `Role '${role_name}' is not assigned to this tenant. Please add it first.`,
+          });
       }
 
       // Check if the user already exists
@@ -240,11 +269,32 @@ const registerUser = async (req, res) => {
         );
       }
 
+      // Generate a random reset token (for example, using crypto)
+      const resetToken = crypto.randomBytes(20).toString("hex");
+      const resetTokenExpiration = new Date(Date.now() + 600000); // Token expires in 10 min
+
+      // Store reset token and expiration in the database
+      await newUser.update(
+        {
+          reset_token: resetToken,
+          reset_token_expiration: resetTokenExpiration,
+        },
+        { transaction }
+      );
+
       // Commit the transaction
       await transaction.commit();
 
+      // Send the registration password reset email
+      try {
+        await sendRegistrationPasswordResetEmail(newUser.email, resetToken);
+      } catch (err) {
+        console.error("Failed to send registration password reset email:", err);
+      }
+
       return res.status(201).json({
-        message: "User registered successfully.",
+        message:
+          `User registered successfully. Password reset email sent to ${newUser.email}. Please check your inbox.`,
         user: {
           user_id: newUser.user_id,
           email: newUser.email,
@@ -262,7 +312,6 @@ const registerUser = async (req, res) => {
   }
 };
 
-
 // Log in a user
 const login = async (req, res) => {
   try {
@@ -270,7 +319,9 @@ const login = async (req, res) => {
 
     // Validate request body
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required." });
+      return res
+        .status(400)
+        .json({ message: "Email and password are required." });
     }
 
     // Fetch the user with password included
@@ -304,7 +355,12 @@ const login = async (req, res) => {
     });
 
     if (!tenantRole) {
-      return res.status(403).json({ message: "Your role is no longer assigned to this tenant. Contact an admin." });
+      return res
+        .status(403)
+        .json({
+          message:
+            "Your role is no longer assigned to this tenant. Contact an admin.",
+        });
     }
 
     // Payload for access token
@@ -489,7 +545,39 @@ const forgotPassword = async (req, res) => {
   }
 };
 
+// const resetRegistrationPassword = async (req, res) => {
+//   const { email } = req.body;
+
+//   try {
+//     // Check if user exists
+//     const user = await User.findOne({ where: { email } });
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     // Generate a random reset token (for example, using crypto)
+//     const resetToken = crypto.randomBytes(20).toString("hex");
+//     const resetTokenExpiration = new Date(Date.now() + 3600000); // Token expires in 1 hour
+
+//     // Store reset token and expiration in the database
+//     user.reset_token = resetToken;
+//     user.reset_token_expiration = resetTokenExpiration;
+//     await user.save();
+
+//     // Send the reset token to the user's email
+//     await sendRgistrationPasswordResetEmail(user.email, resetToken);
+
+//     return res.status(200).json({
+//       message: "Password reset email sent. Please check your inbox.",
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 // Reset Password Endpoint
+
 const resetPassword = async (req, res) => {
   const { resetToken, newPassword } = req.body;
 
@@ -534,4 +622,5 @@ module.exports = {
   verifyEmail,
   forgotPassword,
   resetPassword,
+  // resetRegistrationPassword,
 };

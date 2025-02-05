@@ -1,7 +1,16 @@
-const express = require('express');
-const { registerTenant, registerUser, login, refreshToken, verifyEmail, forgotPassword, resetPassword } = require('../controllers/auth.controller');
-const {checkRole} = require('../middleware/roleMiddleware.js');
-const authMiddleware = require('../middleware/authMiddleware.js');
+const express = require("express");
+const {
+  registerTenant,
+  registerUser,
+  login,
+  refreshToken,
+  verifyEmail,
+  forgotPassword,
+  resetPassword,
+//   resetRegistrationPassword,
+} = require("../controllers/auth.controller");
+const { checkRole } = require("../middleware/roleMiddleware.js");
+const authMiddleware = require("../middleware/authMiddleware.js");
 
 const router = express.Router();
 
@@ -65,8 +74,7 @@ router.post("/register/tenant", registerTenant);
  *         description: Bad request
  *
  */
-router.post("/register/user", authMiddleware, registerUser);
-
+router.post("/register/user", authMiddleware, checkRole('admin'), registerUser);
 
 /**
  * @swagger
@@ -94,7 +102,7 @@ router.post("/register/user", authMiddleware, registerUser);
  *         description: Unauthorized
  *
  */
-router.post('/login', login);
+router.post("/login", login);
 
 /**
  * @swagger
@@ -156,7 +164,7 @@ router.post('/login', login);
  *         description: Server error.
  */
 // Route for refreshing tokens
-router.post('/refresh-token', refreshToken);
+router.post("/refresh-token", refreshToken);
 
 /**
  * @swagger
@@ -181,7 +189,7 @@ router.post('/refresh-token', refreshToken);
  *         description: Bad request
  *
  */
-router.post('/verify-email', verifyEmail);
+router.post("/verify-email", verifyEmail);
 
 /**
  * @swagger
@@ -206,7 +214,32 @@ router.post('/verify-email', verifyEmail);
  *         description: Bad request
  *
  */
-router.post('/forgot-password', forgotPassword);
+router.post("/forgot-password", forgotPassword);
+
+// /**
+//  * @swagger
+//  * /api/auth/reset-newuser-password:
+//  *   post:
+//  *     summary: Send reset password link to new user
+//  *     tags: [Auth]
+//  *     requestBody:
+//  *       required: true
+//  *       content:
+//  *         application/json:
+//  *           schema:
+//  *             type: object
+//  *             properties:
+//  *               email:
+//  *                 type: string
+//  *                 description: User email
+//  *     responses:
+//  *       200:
+//  *         description: Password reset link sent successfully
+//  *       400:
+//  *         description: Bad request
+//  *
+//  */
+// router.post('/reset-newuser-password', resetRegistrationPassword);
 
 /**
  * @swagger
@@ -234,7 +267,6 @@ router.post('/forgot-password', forgotPassword);
  *         description: Bad request
  *
  */
-router.post('/reset-password', resetPassword);
-
+router.post("/reset-password", resetPassword);
 
 module.exports = router;
