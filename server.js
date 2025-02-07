@@ -24,7 +24,7 @@ const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
 const specs = require("./swagger");
 const authMiddleware = require("./middleware/authMiddleware.js");
-const cookieParser = require('cookie-parser');
+const cookieParser = require("cookie-parser");
 
 // Middleware for parsing JSON
 app.use(express.json());

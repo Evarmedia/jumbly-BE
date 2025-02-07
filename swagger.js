@@ -80,8 +80,7 @@ const options = {
             },
             organisation_name: {
               type: "string",
-              description:
-                "The Organisation name of an Admin.",
+              description: "The Organisation name of an Admin.",
             },
             status: {
               type: "string",
@@ -601,8 +600,7 @@ const options = {
             },
             tenant_id: {
               type: "integer",
-              description:
-                "The Tenant ID, referencing the Tenants table.",
+              description: "The Tenant ID, referencing the Tenants table.",
             },
             name: {
               type: "string",
@@ -627,8 +625,7 @@ const options = {
             },
             tenant_id: {
               type: "integer",
-              description:
-                "The Tenant ID, referencing the Tenants table.",
+              description: "The Tenant ID, referencing the Tenants table.",
             },
             project_id: {
               type: "integer",

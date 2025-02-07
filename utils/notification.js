@@ -7,7 +7,7 @@ const { Notification } = require('../models/models');
  * @param {string} message - The notification message.
  * @param {string} type - The type of notification (e.g., 'task', 'system'). Default is 'system'.
  * @param {string} priority - The priority of the notification (e.g., 'low', 'medium', 'high'). Default is 'medium'.
- * @param {number} tenantId - The tenant ID associated with the notification.
+ * @param {number} tenantId - The tenant ID associated with the notifications.
  * @returns {Promise<void>}
  */
 const createNotification = async (userId, message, type = 'system', priority = 'medium', tenantId) => {
