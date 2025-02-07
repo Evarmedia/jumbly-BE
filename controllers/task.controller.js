@@ -621,7 +621,7 @@ const deleteTask = async (req, res) => {
 
 const reportIssue = async (req, res) => {
   try {
-    const { user_id } = req.user; // Extract the logged-in user's ID
+    const { user_id, tenant_id } = req.user; // Extract the logged-in user's ID
     const { task_id, issue_description, photo_attachment } = req.body;
 
     // Validate required fields
@@ -647,13 +647,36 @@ const reportIssue = async (req, res) => {
       photo_attachment,
     });
 
-    // Notify the task assignee about the issue
+    // ✅ Notify the task assignee about the issue (if assigned)
     if (task.assigned_to) {
       await createNotification(
         task.assigned_to,
-        `An issue has been reported for task: ${task.task_name}`,
+        `An issue has been reported for task ${task.task_name}: ${task.issue_description}`,
         "issue",
-        "medium"
+        "medium",
+        tenant_id
+      );
+    }
+
+    // ✅ Get the admin user in the tenancy
+    const adminUser = await User.findOne({
+      where: { tenant_id },
+      include: {
+        model: Role,
+        where: { role_name: "admin" },
+        attributes: [], // No need to return role details
+      },
+      attributes: ["user_id"], // Get only user_id of the admin
+    });
+
+    if (adminUser) {
+      // ✅ Send notification to the admin
+      await createNotification(
+        adminUser.user_id, // Admin user ID
+        `An issue has been reported for task: ${task.task_name}.`,
+        "issue",
+        "high", // Priority increased to 'high' for admin
+        tenant_id
       );
     }
 
