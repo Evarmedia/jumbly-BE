@@ -11,6 +11,11 @@ const {
 } = require("../models/models.js");
 const { Op } = require("sequelize");
 
+// temporary for password reset //
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const config = require("../config/jwt.js");
+
 // Controller to get user profile
 const profile = async (req, res) => {
   try {
@@ -149,6 +154,7 @@ const updateUserDetails = async (req, res) => {
     photo,
     education,
     birthdate,
+    organisation_name,
     website,
     company_name,
     industry,
@@ -180,6 +186,7 @@ const updateUserDetails = async (req, res) => {
       photo,
       education,
       birthdate,
+      organisation_name,
     });
 
     // If the user is a client, fetch the correct `client_id` from `UserClient`
@@ -229,6 +236,7 @@ const updateUserDetails = async (req, res) => {
         "photo",
         "education",
         "birthdate",
+        "organisation_name",
       ],
       include: [
         {
@@ -800,6 +808,54 @@ async function deleteUser(req, res) {
   }
 }
 
+//Temporary password change
+const updatePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  // Extract the JWT token from the request headers
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "No token provided." });
+  }
+
+  try {
+    // Verify the JWT token
+    const decoded = jwt.verify(token, config.jwtSecret);
+    const user_id = decoded.user.user_id; // Use the user_id from the decoded JWT token
+
+    // Find the user in the database, explicitly including the password field
+    const user = await User.findOne({
+      where: { user_id },
+      attributes: { include: ["password"] }, // Include the password field
+    });
+
+    // Verify the current password
+    if (!currentPassword || !user.password) {
+      return res.status(400).json({ message: "Current password or stored password is missing." });
+    }
+
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: "Current password is incorrect." });
+    }
+
+    // Hash the new password
+    const saltRounds = 10;
+    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update the user's password in the database
+    await user.update({ password: hashedNewPassword });
+
+    return res.status(200).json({ message: "Password updated successfully." });
+  } catch (error) {
+    console.error("Error updating password:", error);
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ message: "Invalid token." });
+    }
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 module.exports = {
   profile,
   getUserProfileByAdmin,
@@ -812,4 +868,5 @@ module.exports = {
   getAllUsers,
   superDeleteUser,
   deleteUser,
+  updatePassword,
 };

@@ -1,5 +1,5 @@
 const express = require('express');
-const { profile, getUserProfileByAdmin, updateUserDetails, adminUpdateUser, getAvailableRoles, getAllStaff, getAllClients, getAllAdmins,  getAllUsers, superDeleteUser, deleteUser } = require('../controllers/user.controller.js');
+const { profile, getUserProfileByAdmin, updateUserDetails, adminUpdateUser, getAvailableRoles, getAllStaff, getAllClients, getAllAdmins,  getAllUsers, superDeleteUser, deleteUser, updatePassword } = require('../controllers/user.controller.js');
 const {checkRole} = require('../middleware/roleMiddleware.js');
 const authMiddleware = require('../middleware/authMiddleware.js');
 
@@ -608,5 +608,104 @@ router.delete('/delete/:user_id', checkRole('admin'),  deleteUser);
  *         description: User account deleted
  */
 router.delete('/superdelete/:user_id', checkRole('admin'),  superDeleteUser);
+
+
+/**
+ * @swagger
+ * /api/users/new-password:
+ *   post:
+ *     summary: Update user password [Dev Only!]
+ *     description: Update the password for the authenticated user. Requires a valid JWT token and the current password.
+ *     tags:
+ *       - User
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 description: The user's current password.
+ *                 example: oldPassword123
+ *               newPassword:
+ *                 type: string
+ *                 description: The new password to set.
+ *                 example: newPassword456
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *     responses:
+ *       200:
+ *         description: Password updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Password updated successfully.
+ *       400:
+ *         description: Invalid request (e.g., incorrect current password or missing fields).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Current password is incorrect.
+ *       401:
+ *         description: Unauthorized (e.g., invalid or missing JWT token).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Invalid token.
+ *       404:
+ *         description: User not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: User not found.
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Server error.
+ *                 error:
+ *                   type: string
+ *                   example: Error message details.
+ */
+
+/**
+ * @swagger
+ * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ */
+
+// Route to update user password
+router.post("/new-password", updatePassword);
+
 
 module.exports = router;
