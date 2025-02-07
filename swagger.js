@@ -70,13 +70,13 @@ const options = {
             education: {
               type: "string",
               description:
-                "The education details of the user (Supervisor and Operator-specific).",
+                "The education details of the user (Supervisor and operative-specific).",
             },
             birthdate: {
               type: "string",
               format: "date",
               description:
-                "The birthdate of the user (Supervisor and Operator-specific).",
+                "The birthdate of the user (Supervisor and operative-specific).",
             },
             organisation_name: {
               type: "string",

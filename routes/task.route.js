@@ -1,5 +1,5 @@
 const express = require('express');
-const { createTask, getProjectTasks, getAllTasks, getTaskDetails, getOperatorTasks, updateTaskDetails, updateTaskStatus, reassignTask, deleteTask, reportIssue, listIssues, getTaskIssues, updateIssueStatus } = require('../controllers/task.controller');
+const { createTask, getProjectTasks, getAllTasks, getTaskDetails, getOperativeTasks, updateTaskDetails, updateTaskStatus, reassignTask, deleteTask, reportIssue, listIssues, getTaskIssues, updateIssueStatus } = require('../controllers/task.controller');
 const {checkRole} = require('../middleware/roleMiddleware.js');
 
 
@@ -35,7 +35,7 @@ const router = express.Router();
  *                 description: The ID of the supervisor assigning the task.
  *               assigned_to:
  *                 type: integer
- *                 description: The ID of the operator assigned to the task.
+ *                 description: The ID of the operative assigned to the task.
  *               status_id:
  *                 type: integer
  *                 description: The ID of the task status.
@@ -240,9 +240,9 @@ router.get('/', checkRole('admin'), getAllTasks);
 
 /**
  * @swagger
- * /api/tasks/operator:
+ * /api/tasks/operative:
  *   get:
- *     summary: List tasks assigned to the logged-in operator- permissions(operator)
+ *     summary: List tasks assigned to the logged-in operative- permissions(operative)
  *     tags: [Tasks]
  *     security:
  *       - bearerAuth: []  # Ensure authentication is required
@@ -262,14 +262,14 @@ router.get('/', checkRole('admin'), getAllTasks);
  *                   items:
  *                     $ref: '#/components/schemas/Task'
  *       403:
- *         description: Access denied. Only operators can access this endpoint.
+ *         description: Access denied. Only operatives can access this endpoint.
  *       404:
- *         description: No tasks assigned to this operator.
+ *         description: No tasks assigned to this operative.
  *       500:
  *         description: Internal server error.
  */
-// Route to fetch tasks assigned to the logged-in operator
-router.get('/operator', checkRole('operator'), getOperatorTasks);
+// Route to fetch tasks assigned to the logged-in operative
+router.get('/operative', checkRole('operative'), getOperativeTasks);
 
 
 /**
@@ -345,7 +345,7 @@ router.get('/:task_id', getTaskDetails);
  *                 description: The updated supervisor ID.
  *               assigned_to:
  *                 type: integer
- *                 description: The updated operator ID.
+ *                 description: The updated operative ID.
  *               status_id:
  *                 type: integer
  *                 description: The updated status ID.

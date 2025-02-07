@@ -46,7 +46,7 @@
 - `GET api/tasks` - List tasks ✅
 - `GET api/tasks/projects/{project_id}/` - List project tasks ✅
 - `GET api/tasks/{task_id}` - Retrieve specific task details ✅
-- `GET api/tasks/operator ` - List assigned tasks✅
+- `GET api/tasks/operative ` - List assigned tasks✅
 - `PUT api/tasks/{task_id}` - Update task details ✅
 - `PATCH api/tasks/{task_id}/status` - Change task status ✅
 - `PATCH api/tasks/{task_id}/assign` - Reassign task to operative ✅

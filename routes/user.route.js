@@ -147,7 +147,7 @@ router.get('/roles', checkRole('admin'), getAvailableRoles);
  * @swagger
  * /api/users/staff:
  *   get:
- *     summary: Retrieve a list of staff members(operators and supervisors)
+ *     summary: Retrieve a list of staff members(operatives and supervisors)
  *     description: Returns a list of users who are either operatives or supervisors.
  *     tags: [User]
  *     responses:

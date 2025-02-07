@@ -182,7 +182,41 @@ const updateUserDetails = async (req, res) => {
       birthdate,
     });
 
-    // Fetch the updated user details
+    // If the user is a client, fetch the correct `client_id` from `UserClient`
+    if (user.Role.role_name === "client") {
+      const userClient = await UserClient.findOne({
+        where: { user_id },
+        attributes: ["client_id"],
+      });
+
+      if (userClient) {
+        console.log(`Updating Client with client_id: ${userClient.client_id}`);
+
+        // Update Client details
+        const [updatedRows] = await Client.update(
+          {
+            website,
+            company_name,
+            industry,
+            official_email,
+            contact_person,
+          },
+          {
+            where: {
+              client_id: userClient.client_id,
+            },
+          }
+        );
+
+        if (updatedRows === 0) {
+          console.warn("Client update did not modify any rows. Check tenant_id and client_id.");
+        }
+      } else {
+        console.warn(`No UserClient record found for user_id: ${user_id}`);
+      }
+    }
+
+    // Fetch the updated user details with associated Client data
     const updatedUser = await User.findOne({
       where: { user_id },
       attributes: [
@@ -229,8 +263,8 @@ const updateUserDetails = async (req, res) => {
     }
 
     return res.status(200).json({
-      message: "User details updated successfully.",
-      user: responseUser,
+      message: "This user User details updated successfully.",
+      user: updatedUser,
     });
   } catch (error) {
     console.error("Error updating user details:", error.message);
@@ -281,7 +315,7 @@ const getAllStaff = async (req, res) => {
         .json({ message: "Access denied. Tenant ID is required." });
     }
 
-    // Fetch all staff (operators and supervisors) for the tenant
+    // Fetch all staff (operatives and supervisors) for the tenant
     const staff = await User.findAll({
       where: { tenant_id }, // Ensure staff belong to the same tenant
       include: [
@@ -289,7 +323,7 @@ const getAllStaff = async (req, res) => {
           model: Role,
           where: {
             role_name: {
-              [Op.in]: ["operator", "supervisor"], // Include only specified roles
+              [Op.in]: ["operative", "supervisor"], // Include only specified roles
             },
           },
           attributes: ["role_name", "description"], // Limit attributes returned for roles

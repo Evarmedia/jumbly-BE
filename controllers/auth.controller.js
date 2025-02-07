@@ -61,7 +61,7 @@ const registerTenant = async (req, res) => {
       );
 
       // Default roles to assign to the new tenant
-      const defaultRoleNames = ["admin", "client", "supervisor", "operator"];
+      const defaultRoleNames = ["admin", "client", "supervisor", "operative"];
 
       // Find role IDs for default roles
       const roles = await Role.findAll({

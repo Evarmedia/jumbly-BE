@@ -51,16 +51,16 @@ const createTask = async (req, res) => {
     }
 
     // Validate `assigned_to` only if it's provided
-    let operator = null;
+    let operative = null;
     if (assigned_to) {
-      operator = await User.findOne({
+      operative = await User.findOne({
         where: { user_id: assigned_to, tenant_id },
         include: { model: Role, attributes: ["role_name"] },
       });
 
-      if (!operator || operator.Role.role_name !== "operator") {
+      if (!operative || operative.Role.role_name !== "operative") {
         return res.status(404).json({
-          message: `Assigned_to user with ID ${assigned_to} is not an operator.`,
+          message: `Assigned_to user with ID ${assigned_to} is not an operative.`,
         });
       }
     }
@@ -117,8 +117,8 @@ const createTask = async (req, res) => {
       project_name: createdTask.Project ? createdTask.Project.project_name : null,
       assigned_by: assigner ? assigner.user_id : null,
       assigned_by_role: assigner ? assigner.Role.role_name : null,
-      assigned_to: operator ? operator.user_id : null,
-      assigned_to_role: operator ? operator.Role.role_name : null,
+      assigned_to: operative ? operative.user_id : null,
+      assigned_to_role: operative ? operative.Role.role_name : null,
     });
   } catch (error) {
     console.error("Error creating task:", error);
@@ -300,21 +300,21 @@ const getTaskDetails = async (req, res) => {
   }
 };
 
-const getOperatorTasks = async (req, res) => {
+const getOperativeTasks = async (req, res) => {
   try {
     const { user_id, role_id } = req.user; // Extract user details from the authenticated request
 
-    // Check if the user is an operator
-    const isOperator = await Role.findOne({
-      where: { role_id, role_name: "operator" },
+    // Check if the user is an operative
+    const isoperative = await Role.findOne({
+      where: { role_id, role_name: "operative" },
     });
-    if (!isOperator) {
+    if (!isoperative) {
       return res.status(403).json({
-        message: "Access denied. Only operators can view this endpoint.",
+        message: "Access denied. Only operatives can view this endpoint.",
       });
     }
 
-    // Fetch tasks assigned to the operator
+    // Fetch tasks assigned to the operative
     const tasks = await Task.findAll({
       where: { assigned_to: user_id },
       include: [
@@ -340,7 +340,7 @@ const getOperatorTasks = async (req, res) => {
     if (!tasks.length) {
       return res
         .status(404)
-        .json({ message: "No tasks assigned to this operator." });
+        .json({ message: "No tasks assigned to this operative." });
     }
 
     res.status(200).json({
@@ -348,7 +348,7 @@ const getOperatorTasks = async (req, res) => {
       tasks,
     });
   } catch (error) {
-    console.error("Error fetching operator tasks:", error);
+    console.error("Error fetching operative tasks:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -405,17 +405,17 @@ const updateTaskDetails = async (req, res) => {
 
     // Validate assigned_to (if provided)
     if (assigned_to) {
-      const operator = await User.findOne({
+      const operative = await User.findOne({
         where: { user_id: assigned_to },
         include: {
           model: Role,
-          where: { role_name: "operator" },
+          where: { role_name: "operative" },
           attributes: [],
         },
       });
-      if (!operator) {
+      if (!operative) {
         return res.status(404).json({
-          message: `Assigned_to user with ID ${assigned_to} is not an operator.`,
+          message: `Assigned_to user with ID ${assigned_to} is not an operative.`,
         });
       }
     }
@@ -532,7 +532,7 @@ const reassignTask = async (req, res) => {
     if (!assigned_to) {
       return res
         .status(400)
-        .json({ message: "Operator ID {assigned_to} is required." });
+        .json({ message: "operative ID {assigned_to} is required." });
     }
 
     // Find the task by ID
@@ -543,20 +543,20 @@ const reassignTask = async (req, res) => {
         .json({ message: `Task with ID ${task_id} not found.` });
     }
 
-    // Validate that the new assigned_to user exists and is an operator
-    const operator = await User.findOne({
+    // Validate that the new assigned_to user exists and is an operative
+    const operative = await User.findOne({
       where: { user_id: assigned_to },
       include: {
         model: Role,
-        where: { role_name: "operator" },
+        where: { role_name: "operative" },
         attributes: [],
       },
     });
 
-    if (!operator) {
+    if (!operative) {
       return res
         .status(404)
-        .json({ message: `User with ID ${assigned_to} is not an operator.` });
+        .json({ message: `User with ID ${assigned_to} is not an operative.` });
     }
 
     // Update the task with the new assigned_to ID
@@ -818,7 +818,7 @@ module.exports = {
   createTask,
   getProjectTasks,
   getAllTasks,
-  getOperatorTasks,
+  getOperativeTasks,
   getTaskDetails,
   updateTaskDetails,
   updateTaskStatus,

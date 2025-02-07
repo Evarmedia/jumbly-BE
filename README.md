@@ -69,7 +69,7 @@ npm install jest --save-dev
 
 ### 1. **Authentication**
 - Implements JWT-based authentication.
-- Role-based access control for Admin, Supervisor, Operator, and Client roles.
+- Role-based access control for Admin, Supervisor, operative, and Client roles.
 
 ### 2. **Task Management**
 - Create, assign, update, and manage tasks for various projects.

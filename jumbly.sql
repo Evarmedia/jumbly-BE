@@ -27,12 +27,12 @@ CREATE TABLE Users (
     password TEXT NOT NULL,         -- Common to all roles, required
     first_name TEXT,                -- Common to all roles
     last_name TEXT,                 -- Common to all roles
-    address TEXT,                   -- Common to Supervisor, Operator, Admin, Client
-    gender TEXT,                    -- Common to Supervisor, Operator, Admin, Client
+    address TEXT,                   -- Common to Supervisor, operative, Admin, Client
+    gender TEXT,                    -- Common to Supervisor, operative, Admin, Client
     phone TEXT,                     -- Common to all roles
-    photo TEXT,                     -- Common to Supervisor, Operator, Admin, Client
-    education TEXT,                 -- Unique to Supervisor, Operator
-    birthdate DATE,                 -- Unique to Supervisor, Operator
+    photo TEXT,                     -- Common to Supervisor, operative, Admin, Client
+    education TEXT,                 -- Unique to Supervisor, operative
+    birthdate DATE,                 -- Unique to Supervisor, operative
     organisation_name TEXT,         -- Unique to Admin
     status TEXT CHECK(status IN ('verified', 'unverified')) NOT NULL DEFAULT 'unverified',
     reset_token TEXT,  -- New field for password reset token
@@ -378,7 +378,7 @@ CREATE INDEX idx_auditlogs_table_name ON AuditLogs(table_name);
 CREATE INDEX idx_auditlogs_action ON AuditLogs(action);
 
 
-Pre Inserting roles into the Roles table
+-- Pre Inserting roles into the Roles table
 INSERT INTO Roles (role_name, description)
 VALUES ('admin', 'Administrator role with full access to the system.');
 
@@ -389,14 +389,16 @@ INSERT INTO Roles (role_name, description)
 VALUES ('supervisor', 'Supervisor role with permissions to oversee operations and manage users.');
 
 INSERT INTO Roles (role_name, description)
-VALUES ('operator', 'Operator role with permissions to manage operations.');
+VALUES ('operative', 'operative role with permissions to manage operations.');
 
 -- Pre Inserting project status
 INSERT INTO ProjectStatuses (status_name, description)
 VALUES 
-('not_completed', 'Project has not been completed'),
-('pending', 'Project is pending review or approval'),
-('completed', 'Project has been completed successfully');
+('not_started', 'Project has not been completed'),
+('started', 'Project has started'),
+('in_progress', 'Project is pending review or approval'),
+('completed', 'Project has been completed successfully'),
+('cancelled', 'Project has been cancelled');
 
 --pre inserting task statuses
 INSERT INTO TaskStatuses (status_name, description)
