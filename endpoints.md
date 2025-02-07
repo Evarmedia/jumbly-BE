@@ -102,3 +102,11 @@
 # Audit & Compliance
 - `GET api/logs` - Retrieve system audit logs ✅
 - `GET api/system/compliance-status` - Check data protection compliance // TO BE DONE IN FRONTEND
+
+# Feedback Endpoints
+- `POST/api/feedback` - Clients submit feedback for a project.
+- `PUT /api/feedback/{feedback_id}` - Clients update their feedback.
+- `DELETE /api/feedback/{feedback_id}`	- Clients delete their feedback.
+- `GET /api/feedback/project/{project_id}` - ?order=top ?order=low ?order=all	Retrieve all feedback for a specific project, sorted as needed.
+- `GET /api/feedback/client/{client_id}` - ?order=top ?order=low ?order=all	Retrieve all feedback from a specific client, sorted as needed.
+- `GET /api/feedback/tenancy` - ?order=top ?order=low ?order=all ?sort_by=rating,date,project,client	Admins view all feedback in their tenancy. Response includes Client details and Project details all flattened in an object.

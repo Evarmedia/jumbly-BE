@@ -12,6 +12,7 @@ const notificationRoutes = require("./routes/notification.route.js");
 const syncRoute = require("./routes/sync.route.js");
 const inventoryRoutes = require("./routes/inventory.route.js");
 const transactionRoutes = require("./routes/transaction.route.js");
+const feedbackRoutes = require("./routes/feedback.route.js");
 const { Project } = require("./models/models.js");
 
 const cron = require("node-cron");
@@ -44,6 +45,7 @@ app.use("/api/notifications", authMiddleware, notificationRoutes); // Notificati
 app.use("/api/sync", syncRoute); // sync route
 app.use("/api/inventory", authMiddleware, inventoryRoutes); // sync route
 app.use("/api/transactions", authMiddleware, transactionRoutes); // sync route
+app.use("/api/feedback", authMiddleware, feedbackRoutes); // sync route
 
 console.log(`App running in ${process.env.NODE_ENV} mode.`);
 
