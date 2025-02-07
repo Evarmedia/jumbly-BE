@@ -215,6 +215,11 @@ const getAllTasks = async (req, res) => {
     // Pagination setup
     const offset = (page - 1) * limit;
 
+    // Fetch the total number of tasks matching the filters
+    const totalTasks = await Task.count({
+      where: whereClause,
+    });
+
     // Fetch tasks with filters, associations, and pagination
     const tasks = await Task.findAll({
       where: whereClause,
@@ -249,7 +254,7 @@ const getAllTasks = async (req, res) => {
       tasks,
       page: parseInt(page),
       limit: parseInt(limit),
-      total: tasks.length,
+      total: totalTasks, // Return the total number of tasks across all pages
     });
   } catch (error) {
     console.error("Error fetching tasks:", error);

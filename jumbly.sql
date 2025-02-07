@@ -267,6 +267,21 @@ CREATE TABLE InventoryLog (
     FOREIGN KEY (item_id) REFERENCES Items(item_id) ON DELETE CASCADE
 );
 
+CREATE TABLE Feedback (
+    feedback_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id INTEGER NOT NULL,    -- Foreign key for tenant
+    client_id INTEGER NOT NULL,    -- Foreign key for client
+    project_id INTEGER NOT NULL,   -- Foreign key for project
+    rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5), -- Rating scale from 1-5
+    comments TEXT,                 -- Optional comments from the client
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tenant_id) REFERENCES Tenants(tenant_id) ON DELETE CASCADE,
+    FOREIGN KEY (client_id) REFERENCES Clients(client_id) ON DELETE CASCADE,
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id) ON DELETE CASCADE
+);
+
+
 -- Before delete
 CREATE TRIGGER BeforeDeleteProject
 BEFORE DELETE ON Projects

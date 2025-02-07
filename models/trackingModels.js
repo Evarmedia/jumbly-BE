@@ -2,7 +2,6 @@ const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
 class Report extends Model {}
-
 Report.init(
   {
     report_id: {
@@ -155,4 +154,65 @@ Notification.init(
   }
 );
 
-module.exports = { Report, Issue, Notification };
+class Feedback extends Model {}
+Feedback.init(
+  {
+    feedback_id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Tenants',
+        key: 'tenant_id',
+      },
+    },
+    client_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Clients',
+        key: 'client_id',
+      },
+    },
+    project_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Projects',
+        key: 'project_id',
+      },
+    },
+    rating: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        min: 1,
+        max: 5, // Rating must be between 1 and 5
+      },
+    },
+    comments: {
+      type: DataTypes.TEXT,
+      allowNull: true, // Optional comments
+    },
+    created_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+  },
+  {
+    sequelize,
+    modelName: 'Feedback',
+    tableName: 'Feedback',
+    timestamps: false, // Explicitly manage created_at and updated_at
+  }
+);
+
+module.exports = { Report, Issue, Notification, Feedback };

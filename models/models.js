@@ -11,7 +11,7 @@ const {
   TaskCategory,
   ProjectStatus,
 } = require("./attributesModel"); 
-const { Report, Issue, Notification } = require("./trackingModels");
+const { Report, Issue, Notification, Feedback } = require("./trackingModels");
 const {
   Item,
   ProjectInventory,
@@ -146,6 +146,16 @@ Role.belongsToMany(Tenant, { through: TenantRole, foreignKey: "role_id" });
 User.belongsTo(Tenant, { foreignKey: "tenant_id" });
 User.belongsTo(Role, { foreignKey: "role_id" });
 
+// ✅ Feedback Relationships
+Tenant.hasMany(Feedback, { foreignKey: 'tenant_id', onDelete: 'CASCADE' });
+Feedback.belongsTo(Tenant, { foreignKey: 'tenant_id' });
+
+Client.hasMany(Feedback, { foreignKey: 'client_id', onDelete: 'CASCADE' });
+Feedback.belongsTo(Client, { foreignKey: 'client_id' });
+
+Project.hasMany(Feedback, { foreignKey: 'project_id', onDelete: 'CASCADE' });
+Feedback.belongsTo(Project, { foreignKey: 'project_id' });
+
 
 module.exports = {
   User,
@@ -167,4 +177,5 @@ module.exports = {
   Item,
   ProjectInventory,
   Transaction,
+  Feedback,
 };
