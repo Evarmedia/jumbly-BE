@@ -12,8 +12,6 @@ const {
 const { checkRole } = require("../middleware/roleMiddleware.js");
 const authMiddleware = require("../middleware/authMiddleware.js");
 
-const mi = "time"
-
 const router = express.Router();
 
 /**
