@@ -7,7 +7,7 @@ const {
   verifyEmail,
   forgotPassword,
   resetPassword,
-//   resetRegistrationPassword,
+  //   resetRegistrationPassword,
 } = require("../controllers/auth.controller");
 const { checkRole } = require("../middleware/roleMiddleware.js");
 const authMiddleware = require("../middleware/authMiddleware.js");
@@ -74,7 +74,7 @@ router.post("/register/tenant", registerTenant);
  *         description: Bad request
  *
  */
-router.post("/register/user", authMiddleware, checkRole('admin'), registerUser);
+router.post("/register/user", authMiddleware, checkRole("admin"), registerUser);
 
 /**
  * @swagger

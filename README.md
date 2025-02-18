@@ -22,7 +22,7 @@ Jumbly Backend is the server-side application powering the Jumbly platform. It i
 
 To install the necessary dependencies for Jumbly Backend, use the following commands:
 
-### Core Dependencies
+### Core Dependencies used
 
 ```bash
 npm install express sequelize sqlite3
